@@ -14,10 +14,10 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.4.1/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.66f7022aa8b911442021b2bf2260656a.js"
+  "/precache-manifest.784b55fa6b06b79079a39e5980e5f71c.js"
 );
 
-workbox.core.setCacheNameDetails({prefix: "all-music"});
+workbox.core.setCacheNameDetails({prefix: "panos-music"});
 
 /**
  * The workboxSW.precacheAndRoute() method efficiently caches and responds to
