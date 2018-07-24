@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.4.1/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.1517c3c06779db4130271fb173d92ba5.js"
+  "/precache-manifest.df6546001c3590b1fda921d682329e48.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "panos-music"});
