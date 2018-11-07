@@ -1,0 +1,175 @@
+#window-perspective {
+  perspective: 50px;
+  opacity: 0;
+  transition: opacity 1s;
+}
+
+#window {
+  width: 600px;
+  height: 400px;
+  background-color: #529bdc;
+  border-radius: 7px;
+  position: relative;
+  margin: auto;
+  box-sizing: border-box;
+  transition: transform 500ms;
+  box-shadow: 2px 2px 50px rgba(0, 0, 0, 0.2);
+}
+@media (min-width: 320px) and (max-width: 767px) {
+  #window {
+    width: 300px;
+    height: 200px;
+  }
+}
+@media (min-width: 1024px) {
+  #window {
+    width: 700px;
+    height: 450px;
+  }
+}
+
+#window-header {
+  width: 100%;
+  height: 45px;
+  background-color: #6aaae2;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 2px solid white;
+}
+
+#search-container {
+  position: absolute;
+  height: 24px;
+  width: 170px;
+  right: 12px;
+}
+#search-container svg {
+  position: absolute;
+  transform: translate(35%, 35%);
+}
+
+#search {
+  color: white;
+  border: 0;
+  border-radius: 4px;
+  padding-left: 24px;
+  height: 100%;
+  background-color: #529bdc;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input:focus {
+  outline-color: white;
+}
+
+input::placeholder {
+  font-size: 14px;
+  color: white;
+  opacity: 1;
+  /* Firefox */
+}
+
+#window-header p {
+  font-size: 16px;
+  color: white;
+}
+
+.window-fadein {
+  opacity: 1 !important;
+}
+
+#window-buttons {
+  left: 15px;
+  width: 60px;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  position: absolute;
+}
+
+.window-button {
+  border-radius: 100%;
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#window-top-dot {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 5px;
+  border-top: 2px white dashed;
+  right: -15px;
+  transition: all 1s cubic-bezier(0, 0, 0.58, 1);
+}
+
+#window-left-dot {
+  position: absolute;
+  left: 0;
+  width: 5px;
+  height: 0;
+  border-left: 2px white dashed;
+  bottom: -15px;
+  transition: all 1s cubic-bezier(0, 0, 0.58, 1);
+}
+
+#window-right-dot {
+  position: absolute;
+  right: 0;
+  width: 5px;
+  height: 0px;
+  border-right: 2px white dashed;
+  top: -15px;
+  transition: all 1s cubic-bezier(0, 0, 0.58, 1);
+}
+
+.window-height {
+  height: 430px !important;
+}
+@media (min-width: 320px) and (max-width: 767px) {
+  .window-height {
+    height: 230px !important;
+  }
+}
+@media (min-width: 1024px) {
+  .window-height {
+    height: 480px !important;
+  }
+}
+
+.window-width {
+  width: 630px !important;
+}
+@media (min-width: 320px) and (max-width: 767px) {
+  .window-width {
+    width: 330px !important;
+  }
+}
+@media (min-width: 1024px) {
+  .window-width {
+    width: 730px !important;
+  }
+}
+
+#window-bottom-dot {
+  position: absolute;
+  bottom: 0px;
+  width: 0;
+  height: 5px;
+  border-bottom: 2px white dashed;
+  left: -15px;
+  transition: all 1s cubic-bezier(0, 0, 0.58, 1);
+}
+
+/*# sourceMappingURL=main.css.map */

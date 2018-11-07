@@ -1,0 +1,58 @@
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  color: white;
+}
+
+#splash {
+  width: 100%;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(#559ece, #3d8ce9);
+}
+
+#page-header {
+  width: 100%;
+  height: 50px;
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+}
+#page-header a {
+  margin-right: 15px;
+  opacity: 0;
+  transition: opacity 500ms;
+}
+
+#tagline {
+  transition: all 1s;
+}
+
+#window-inner {
+  width: 100%;
+  height: auto;
+}
+#window-inner h1 {
+  text-align: center;
+  margin-top: 150px;
+}
+
+/*# sourceMappingURL=page.css.map */
