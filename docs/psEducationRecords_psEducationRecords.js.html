@@ -1,0 +1,358 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Source: psEducationRecords/psEducationRecords.js</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-banner" role="banner">
+        </div>
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <h1>Source: psEducationRecords/psEducationRecords.js</h1>
+          </header>
+          <article>
+            <pre class="prettyprint linenums"><code>import { LightningElement, track, api, wire } from &#x27;lwc&#x27;;
+import { ShowToastEvent } from &#x27;lightning/platformShowToastEvent&#x27;;
+import previousEduRecs from &#x27;@salesforce/apex/psAcademicHistoryController.previousEduRecs&#x27;;
+import Id from &#x27;@salesforce/user/Id&#x27;;
+import { refreshApex } from &#x27;@salesforce/apex&#x27;;
+import { deleteRecord } from &#x27;lightning/uiRecordApi&#x27;;
+
+import { CurrentPageReference } from &#x27;lightning/navigation&#x27;;
+import { registerListener, unregisterAllListeners, fireEvent } from &#x27;c/pubsub&#x27;;
+import { RefreshEducation, EducationCount } from &#x27;c/messageChannels&#x27;;
+import ThirdPartyAccountLinkKey from &#x27;@salesforce/schema/ThirdPartyAccountLink.ThirdPartyAccountLinkKey&#x27;;
+
+const DISPLAY_FIELDS &#x3D; [
+    {
+        apiName: &#x27;adm_Display_City__c&#x27;,
+        label: &#x27;City&#x27;,
+        type: &#x27;High School/College&#x27;
+    },
+    {
+        apiName: &#x27;adm_Display_State__c&#x27;,
+        label: &#x27;State&#x27;,
+        type: &#x27;High School/College&#x27;
+    },
+    {
+        apiName: &#x27;adm_Display_Country__c&#x27;,
+        label: &#x27;Country&#x27;,
+        type: &#x27;High School/College&#x27;
+    },
+    {
+        apiName: &#x27;adm_Attend_From__c&#x27;,
+        label: &#x27;Date Started&#x27;,
+        type: &#x27;High School/College&#x27;
+    },
+    {
+        apiName: &#x27;adm_Attend_to__c&#x27;,
+        label: &#x27;Date Ended&#x27;,
+        type: &#x27;High School/College&#x27;
+    },
+    {
+        apiName: &#x27;adm_Counselor_First_Name__c&#x27;,
+        label: &#x27;Counselor\&#x27;s Name&#x27;,
+        type: &#x27;High School&#x27;
+    },
+    {
+        apiName: &#x27;adm_Counselor_Email__c&#x27;,
+        label: &#x27;Counselor\&#x27;s Email&#x27;,
+        type: &#x27;High School&#x27;
+    },
+    {
+        apiName: &#x27;adm_Counselor_Phone__c&#x27;,
+        label: &#x27;Counselor\&#x27;s Phone&#x27;,
+        type: &#x27;High School&#x27;
+    },
+    {
+        apiName: &#x27;Units_Completed_Upon_Applying__c&#x27;,
+        label: &#x27;Units Completed&#x27;,
+        type: &#x27;College&#x27;
+    }
+
+];
+
+/**
+ * @author Nathan Young, John Panos
+ * @description Displays previous education records on psAcademicHistory
+ */
+class psEducationRecords extends LightningElement {
+    /**
+     * The student&#x27;s userId from Salesforce
+     */
+    userId &#x3D; Id;
+
+    /**
+     * Education records to list
+     * @type {Array&amp;lt;EducationRecords&gt;}
+     */
+    @track educationRecs &#x3D; [];
+    @wire(previousEduRecs, { userId: &#x27;$userId&#x27; })
+    wiredRecords(result, error) {
+        this.appData &#x3D; result
+        //processes the wired data
+        if (result.data) {
+            this.educationRecs &#x3D; [];
+            result.data.forEach(educationRecord &#x3D;&gt; {
+                let rec &#x3D; {
+                    Id: null,
+                    isCollege: false,
+                    adm_Display_School_Name__c: &#x27;&#x27;
+                };
+                
+                // Sets general information needed for the whole card
+                let isCollege &#x3D; (educationRecord.RecordType.Name &#x3D;&#x3D;&#x3D; &#x27;College&#x27;);
+                // Set friendly properties on proxy object
+                rec.Id &#x3D; educationRecord.Id;
+                rec.isCollege &#x3D; isCollege;
+                rec.adm_Display_School_Name__c &#x3D; educationRecord.adm_Display_School_Name__c;
+
+                let userFields &#x3D; [];
+                // Iterates through each field to check if any should be &#x27;No Data&#x27;
+                for (let i &#x3D; 0; i &amp;lt; DISPLAY_FIELDS.length; i++) {
+                    let field &#x3D; DISPLAY_FIELDS[i];
+
+                    if ((field.type.includes(&#x27;College&#x27;) &amp;amp;&amp;amp; isCollege) || (field.type.includes(&#x27;High School&#x27;) &amp;amp;&amp;amp; !isCollege)) {
+                        let displayValue &#x3D; educationRecord[field.apiName];
+                        if (displayValue &#x3D;&#x3D; undefined) {
+                            displayValue &#x3D; &#x27;No Data&#x27;;
+                        }
+                        else {
+                            if (field.label &#x3D;&#x3D; &#x27;Counselor\&#x27;s Name&#x27;) {
+                                displayValue &#x3D; educationRecord[field.apiName] + &#x27; &#x27; + educationRecord[&#x27;adm_Counselor_Last_Name__c&#x27;];
+                            }
+                        }
+
+                        userFields.push({ label: field.label, value: displayValue })
+                    }
+
+                }
+                rec[&#x27;fields&#x27;] &#x3D; userFields;
+                this.educationRecs.push(rec);
+                this.sendCount();
+            });
+        } else {
+            console.log(&#x27;error: &#x27; + error);
+        }
+    }
+
+    /**
+     * Information for the education record edit modal
+     * @property {EducationRecord} record The selected record to edit
+     * @property {Boolean} isLoading If true then modal should show a spinner
+     * @property {Boolean} show If true then the modal should be visible
+     */
+    @track modal &#x3D; {
+        record: {
+            Id: null,
+            isCollege: false
+        },
+        isLoading: false,
+        show: false
+    };
+
+    //closes the modal, and hides the content until it needs to be exposed/loaded again
+    closeModal() {
+        this.modal.show &#x3D; false;
+        this.modal.isLoading &#x3D; false;
+    }
+
+    /**
+     * Deletes an education record
+     * @param {*} event 
+     * @todo This method is not being called anywhere, should it?
+     */
+    deleteRec(event) {
+        let recordId &#x3D; event.target.id.substring(0, event.target.id.length - 3);
+        deleteRecord(recordId)
+            .then(() &#x3D;&gt; {
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: &#x27;Success&#x27;,
+                        message: &#x27;Education record deleted&#x27;,
+                        variant: &#x27;success&#x27;,
+                    }),
+                );
+                this.refresh();
+            })
+            .catch(error &#x3D;&gt; {
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: &#x27;Something went wrong&#x27;,
+                        message: &#x27;An error occurred while deleting your education record. Please try again later.&#x27;,
+                        variant: &#x27;error&#x27;,
+                    }),
+                );
+            });
+        this.refresh();
+    }
+
+    //notifies user of update
+    handleSuccess(event) {
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: &#x27;Success&#x27;,
+                message: &#x27;Your school information has been updated&#x27;,
+                variant: &quot;success&quot;
+            }),
+        );
+        this.refresh();
+        this.closeModal();
+    }
+
+    //hides the window and shows a loading spinner when submitting
+    handleSubmit(event) {
+        this.modal.isLoading &#x3D; true;
+        this.modal.show &#x3D; false;
+    }
+
+    //once the form has completed loading all fields/data, display the modal
+    handleLoad(event) {
+        this.modal.isLoading &#x3D; false;
+    }
+
+    handleError(event) {
+        const payload &#x3D; event.detail;
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title: &#x27;Something went wrong.&#x27;,
+                message: &#x27;An error occurred while saving your changes. Please try again later.&#x27;,
+                variant: &#x27;error&#x27;
+            })
+        );
+    }
+
+    /**
+     * LWC helper to determine if it should show education records or not
+     * @returns {Boolean} Returns true if there are education records to display
+     */
+    get shouldShowRecords() {
+        return this.educationRecs.length &gt; 0;
+    }
+
+    get modalClass() {
+        return this.modal.show ? &#x27;slds-show&#x27; : &#x27;slds-hide&#x27;;
+    }
+
+    /**
+     * Is called when an education record is being edited and opens up
+     * a modal in order to edit education fields
+     * @param {HTMLEvent} event The element that fired the event
+     */
+    editRec(event) {
+        // TODO: Why loop over when you can grab it using a hashmap?
+        // Gathers record info to be displayed in the modal
+        let recordId &#x3D; event.target.name
+        for (let i in this.educationRecs) {
+            let rec &#x3D; this.educationRecs[i];
+            if (rec.Id &#x3D;&#x3D;&#x3D; recordId) {
+                this.modal.record &#x3D; rec;
+                this.modal.show &#x3D; true;
+            }
+        }
+        this.modal.isLoading &#x3D; true;
+    }
+    
+    /**
+     * When fired, any component listening will get the count of education records
+     * @event psEducationRecords.EducationCount
+     * @type {Object}
+     * @property {Number} count The count of education records
+     */
+    /**
+     * When a new record is created update count
+     * @fires psEducationRecords.EducationCount
+     */
+    sendCount() {
+        fireEvent(
+            this.pageRef,
+            EducationCount,
+            {
+                count: this.educationRecs.length + 1
+            }
+        );
+    }
+
+    /**
+     * Refreshes the education records
+     */
+    refresh() {
+        return refreshApex(this.appData);
+    }
+
+    /**
+     * Page reference in order to subscribe/publish events
+     */
+    @wire(CurrentPageReference) pageRef;
+
+    /**
+     * Internal Salesforce life cycle method, used for registering listeners to events
+     */
+    connectedCallback() {
+        registerListener(RefreshEducation, this.onRefreshEducation, this);
+        this.refresh();
+    }
+
+    /**
+     * Internal Salesforce life cycle method, used for unregistering listeners to events
+     */
+    disconnectedCallback() {
+        unregisterAllListeners(this);
+    }
+
+    /**
+     * When fired, any component listening knows to update the education record
+     * @event psEducationRecords.RefreshEducation
+     * @type {Boolean}
+     */
+    /**
+     * When event fires, it refreshes {@link psEducationRecords#educationRecs}.
+     * @listens psEducationRecords.RefreshEducation
+     */
+    onRefreshEducation(payload) {
+        this.refresh();
+    }
+
+}
+
+export default psEducationRecords;</code></pre>
+          </article>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

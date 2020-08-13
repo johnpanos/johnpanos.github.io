@@ -1,0 +1,518 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Class: psQuickSearchHS</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <div class="symbol-detail-labels"><span class="label label-kind">class</span></div>
+            <h1><small></small><span class="symbol-name">psQuickSearchHS</span></h1>
+            <p class="source-link">Source: <a href="psQuickSearchHS_psQuickSearchHS.js.html#source-line-31">psQuickSearchHS/<wbr>psQuickSearchHS.<wbr>js:31</a></p>
+            <div class="symbol-classdesc">
+              <p>Quick search component for <a href="psAcademicHistory.html">psAcademicHistory</a></p>
+            </div>
+            <dl class="dl-compact">
+            </dl>
+          </header>
+          <section id="summary">
+            <div class="summary-callout">
+              <h2 class="summary-callout-heading">Properties</h2>
+              <div class="summary-content">
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#loading">loading</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psQuickSearchHS.html#pageRef">pageRef</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psQuickSearchHS.html#pagination">pagination</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#paginationCache">paginationCache</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psQuickSearchHS.html#pCurrentPage">pCurrentPage</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psQuickSearchHS.html#searchFields">searchFields</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#stateOptions">stateOptions</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+            <div class="summary-callout">
+              <h2 class="summary-callout-heading">Methods</h2>
+              <div class="summary-content">
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#connectedCallback">connectedCallback()</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psQuickSearchHS.html#disconnectedCallback">disconnectedCallback()</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#handleSearch">handleSearch()</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psQuickSearchHS.html#onEnterThenSearch">onEnterThenSearch(event)</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#processData">processData(rawData)</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psQuickSearchHS.html#resetSearch">resetSearch()</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+            <div class="summary-callout">
+              <h2 class="summary-callout-heading">Events</h2>
+              <div class="summary-content">
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#.event:ClearQuickSearchHS">ClearQuickSearchHS</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psQuickSearchHS.html#.event:onsearchcomplete">onsearchcomplete</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                </div>
+              </div>
+            </div>
+          </section>
+          <section>
+            <h2 id="psQuickSearchHS">new&nbsp;<span class="symbol-name">psQuickSearchHS</span><span class="signature"><span class="signature-params">()</span></span></h2>
+            <dl class="dl-compact">
+            </dl>
+          </section>
+          <section>
+            <h2>Properties</h2>
+            <section>
+              <h3 id="loading"><span class="symbol-name">loading</span><small class="property-type">
+                  &nbsp;Boolean</small></h3>
+              <p>If true display loading indicator</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="pageRef"><span class="symbol-name">pageRef</span></h3>
+              <p>Page reference in order to subscribe/publish events</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="pagination"><span class="symbol-name">pagination</span></h3>
+              <p>Data required to calculate pagination</p>
+              <section>
+                <h4>Properties</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>data</p>
+                      </td>
+                      <td>
+                        <p>Object</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The data returned from the search</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>pageSize</p>
+                      </td>
+                      <td>
+                        <p>Number</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The amount of rows per page</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>totalCount</p>
+                      </td>
+                      <td>
+                        <p>Number</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The total possible rows from the search query</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>totalPageCount</p>
+                      </td>
+                      <td>
+                        <p>Number</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The total amount of pages from the search query</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="paginationCache"><span class="symbol-name">paginationCache</span></h3>
+              <p>Pagination cache, so that if <a href="psQuickSearchHS.html#searchFields">psQuickSearchHS#searchFields</a>
+                are changed we still have the old values to search with on page
+                previous or next</p>
+              <section>
+                <h4>Properties</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>name</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The name of the school to search</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>city</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The city of the school to search</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>state</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The state of the school to search</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>country</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The country of the school to search</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="pCurrentPage"><span class="symbol-name">pCurrentPage</span><small class="property-type">
+                  &nbsp;Number</small></h3>
+              <p>The current page for the search list</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="searchFields"><span class="symbol-name">searchFields</span></h3>
+              <p>School search fields</p>
+              <section>
+                <h4>Properties</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>name</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The name of the school to search</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>city</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The city of the school to search</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>state</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The state of the school to search</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>country</p>
+                      </td>
+                      <td>
+                        <p>String</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The country of the school to search</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="stateOptions"><span class="symbol-name">stateOptions</span><small class="property-type">
+                  &nbsp;Array of Object</small></h3>
+              <p>An array of state options</p>
+              <dl class="dl-compact">
+                <dt>To do</dt>
+                <dd>Fetch these values from Salesforce instead of having an array</dd>
+              </dl>
+            </section>
+            <h2>Methods</h2>
+            <section>
+              <h3 id="connectedCallback"><span class="symbol-name">connectedCallback</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>Internal Salesforce callback in order to register events</p>
+              <dl class="dl-compact">
+                <dt>Listens to</dt>
+                <dd><a href="psQuickSearchHS.html#.event:ClearQuickSearchHS">psQuickSearchHS.event:ClearQuickSearchHS</a></dd>
+              </dl>
+              <h3 id="disconnectedCallback"><span class="symbol-name">disconnectedCallback</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>Internal Salesforce callback in order to unregister events</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="handleSearch"><span class="symbol-name">handleSearch</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>Searches schools</p>
+              <dl class="dl-compact">
+                <dt>Fires</dt>
+                <dd><a href="psQuickSearchHS.html#.event:onsearchcomplete">psQuickSearchHS.event:onsearchcomplete</a></dd>
+              </dl>
+              <h3 id="onEnterThenSearch"><span class="symbol-name">onEnterThenSearch</span><span class="signature"><span class="signature-params">(event)</span></span></h3>
+              <p>Receives an on key press event for every text field on the search,
+                and if that key is the Enter/Return key, then search</p>
+              <section>
+                <h4>Parameter</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>event</p>
+                      </td>
+                      <td>
+                        <p>HTMLEvent</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>Contains the key that the user pressed</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="processData"><span class="symbol-name">processData</span><span class="signature"><span class="signature-params">(rawData)</span></span></h3>
+              <p>Create formatted table data for showing on the component</p>
+              <section>
+                <h4>Parameter</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>rawData</p>
+                      </td>
+                      <td>
+                        <p>any type</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The incoming account records from Salesforce</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="resetSearch"><span class="symbol-name">resetSearch</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>Resets the search to be empty</p>
+              <dl class="dl-compact">
+              </dl>
+            </section>
+            <h2>Events</h2>
+            <section>
+              <div class="symbol-detail-labels"><span class="label label-static">static</span></div>
+              <h3 id=".event:ClearQuickSearchHS"><span class="symbol-name">ClearQuickSearchHS</span></h3>
+              <p>When fired, the search fields will be cleared</p>
+              <dl class="dl-compact">
+                <dt>Listener</dt>
+                <dd><a href="psQuickSearchHS.html#connectedCallback">psQuickSearchHS#connectedCallback</a></dd>
+              </dl>
+              <div class="symbol-detail-labels"><span class="label label-static">static</span></div>
+              <h3 id=".event:onsearchcomplete"><span class="symbol-name">onsearchcomplete</span><small class="property-type">
+                  &nbsp;Boolean</small></h3>
+              <p>Fired when search button is pressed</p>
+              <dl class="dl-compact">
+                <dt>Listener</dt>
+                <dd><a href="psAcademicHistory.html#onSearch">psAcademicHistory#onSearch</a></dd>
+              </dl>
+            </section>
+          </section>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

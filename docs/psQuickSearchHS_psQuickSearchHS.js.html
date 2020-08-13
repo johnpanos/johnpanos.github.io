@@ -1,0 +1,423 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Source: psQuickSearchHS/psQuickSearchHS.js</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-banner" role="banner">
+        </div>
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <h1>Source: psQuickSearchHS/psQuickSearchHS.js</h1>
+          </header>
+          <article>
+            <pre class="prettyprint linenums"><code>/* eslint-disable guard-for-in */
+/*
+    child component for searching on psAcademicHistory
+    Created by James Lopez
+    Last Updated: 8/4/2020 by John Panos
+    Modified by John Panos to add pagination
+*/
+import { LightningElement, track, api, wire } from &#x27;lwc&#x27;;
+import { ShowToastEvent } from &quot;lightning/platformShowToastEvent&quot;;
+import searchSchoolWithPagination from &quot;@salesforce/apex/QuickSearchHSController.searchSchoolWithPagination&quot;;
+
+import { CurrentPageReference } from &#x27;lightning/navigation&#x27;;
+import { registerListener, unregisterAllListeners } from &#x27;c/pubsub&#x27;;
+import { ClearQuickSearchHS } from &#x27;c/messageChannels&#x27;;
+
+const columns &#x3D; [
+    { label: &#x27;Name&#x27;, fieldName: &#x27;Name&#x27; },
+    { label: &#x27;City&#x27;, fieldName: &#x27;BillingCity&#x27; },
+    { label: &#x27;State&#x27;, fieldName: &#x27;BillingState&#x27; },
+    { label: &#x27;Country&#x27;, fieldName: &#x27;BillingCountry&#x27; },
+    { label: &#x27;CEEB Code&#x27;, fieldName: &#x27;CEEB_Code__c&#x27; }
+];
+
+const kPaginationConfig &#x3D; {
+    pageSize: 20
+};
+
+/**
+ * Quick search component for {@link psAcademicHistory}
+ */
+class psQuickSearchHS extends LightningElement {
+    /**
+     * Page reference in order to subscribe/publish events
+     */
+    @wire(CurrentPageReference) pageRef;
+
+    @api filteredData;
+
+    // New inputs
+    @api schoolType;
+
+    /**
+     * School search fields
+     * @property {String} name The name of the school to search
+     * @property {String} city The city of the school to search
+     * @property {String} state The state of the school to search
+     * @property {String} country The country of the school to search
+     */
+    @track searchFields &#x3D; {
+        name: &quot;&quot;,
+        city: &quot;&quot;,
+        state: &quot;&quot;,
+        country: &quot;&quot;
+    };
+
+    /**
+     * If true display loading indicator
+     * @type {Boolean}
+     */
+    @track loading &#x3D; false;
+
+    /**
+     * Data required to calculate pagination
+     * @property {Object} data The data returned from the search
+     * @property {Number} pageSize The amount of rows per page
+     * @property {Number} totalCount The total possible rows from the search query
+     * @property {Number} totalPageCount The total amount of pages from the search query
+     */
+    @track pagination &#x3D; {
+        data: null,
+        pageSize: 0,
+        totalCount: 0,
+        totalPageCount: 0
+    };
+
+    /**
+     * Pagination cache, so that if {@link psQuickSearchHS#searchFields}
+     * are changed we still have the old values to search with on page
+     * previous or next
+     * @property {String} name The name of the school to search
+     * @property {String} city The city of the school to search
+     * @property {String} state The state of the school to search
+     * @property {String} country The country of the school to search
+     */
+    @track paginationCache &#x3D; {
+        name: &quot;&quot;,
+        city: &quot;&quot;,
+        state: &quot;&quot;,
+        country: &quot;&quot;
+    }
+
+    /**
+     * The current page for the search list
+     * @type {Number}
+     */
+    @track pCurrentPage &#x3D; 1;
+
+    @track accId;
+
+    /**
+     * When fired, the search fields will be cleared
+     * @event psQuickSearchHS.ClearQuickSearchHS
+     */
+    /**
+     * Internal Salesforce callback in order to register events
+     * @listens psQuickSearchHS.ClearQuickSearchHS
+     */
+    connectedCallback() {
+        registerListener(ClearQuickSearchHS, () &#x3D;&gt; { this.resetSearch() }, this);
+    }
+
+    /**
+     * Internal Salesforce callback in order to unregister events
+     */
+    disconnectedCallback() {
+        unregisterAllListeners(this);
+    }
+
+    /**
+     * Create formatted table data for showing on the component
+     * @param {*} rawData The incoming account records from Salesforce
+     */
+    processData(rawData) {
+        var tableData &#x3D; [];
+        var record;
+
+        if (rawData) {
+            this.columns &#x3D; columns;
+
+            for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                record &#x3D; rawData[i];
+
+                let fields &#x3D; [];
+
+                fields.push({ key: record.Id, label: record.Name, value: record.Name })
+                fields.push({ key: record.Id, label: record.BillingCity, value: record.BillingCity })
+                fields.push({ key: record.Id, label: record.BillingState, value: record.BillingState })
+                fields.push({ key: record.Id, label: record.BillingCountry, value: record.BillingCountry })
+                fields.push({ key: record.Id, label: record.CEEB_Code__c, value: record.CEEB_Code__c })
+
+                tableData.push({
+                    fields: fields,
+                    accId: record.Id
+                });
+            }
+        }
+        return tableData;
+    }
+
+    /**
+     * Resets the search to be empty
+     */
+    resetSearch() {
+        this.paginationCache &#x3D; {
+            name: &quot;&quot;,
+            city: &quot;&quot;,
+            state: &quot;&quot;,
+            country: &quot;&quot;
+        };
+        this.searchFields &#x3D; {
+            name: &quot;&quot;,
+            city: &quot;&quot;,
+            state: &quot;&quot;,
+            country: &quot;&quot;
+        };
+        this.pagination &#x3D; {
+            data: null,
+            pageSize: 0,
+            totalCount: 0,
+            totalPageCount: 0
+        };
+        this.filteredData &#x3D; null;
+    }
+
+    onRowClick(event) {
+        try {
+            const accIdClicked &#x3D; this.filteredData[event.currentTarget.rowIndex - 1].accId;
+            let inp &#x3D; Array.from(this.template.querySelectorAll(&#x27;tr&#x27;));
+            if (accIdClicked &#x3D;&#x3D;&#x3D; this.accId) {
+                this.accId &#x3D; &quot;&quot;;
+                for (let i in inp) {
+                    if (i &#x3D;&#x3D; event.currentTarget.rowIndex) {
+                        inp[i].className &#x3D; &#x27;&#x27;;
+                    }
+                }
+            }
+            else {
+                this.accId &#x3D; accIdClicked;
+                for (let i in inp) {
+                    if (i &#x3D;&#x3D; event.currentTarget.rowIndex) {
+                        inp[i].className &#x3D; &#x27;raised-row&#x27;;
+                    }
+                    else {
+                        inp[i].className &#x3D; &#x27;lowered-row&#x27;;
+                    }
+                }
+            }
+            const rowSelected &#x3D; new CustomEvent(&#x27;rowselected&#x27;, {
+                detail: this.accId, bubbles: true, composed: true
+            });
+            this.dispatchEvent(rowSelected);
+        } catch (e) {
+            alert(&#x27;ERROR selecting a row: &#x27; + e);
+        }
+    }
+
+    get cardTitle() {
+        return this.schoolType + &#x27; Search&#x27;;
+    }
+
+    // Track changes when user enters input in the search query
+    handleChange(event) {
+        const field &#x3D; event.target.name;
+        this.searchFields[field] &#x3D; event.target.value;
+    }
+
+    get showNextPrevious() {
+        return !(this.currentPage &amp;lt; this.pagination.totalPageCount);
+    }
+
+    get showPreviousButton() {
+        return !(this.currentPage &gt; 1);
+    }
+
+    get showNextButton() {
+        return !(this.currentPage &amp;lt; this.pagination.totalPageCount);
+    }
+
+    onPrevious() {
+        if (this.currentPage &amp;lt;&#x3D; 1) {
+            // Cannot go to the zero page or negative pages
+            return;
+        }
+
+        this.currentPage -&#x3D; 1;
+    }
+
+    onNext() {
+        if (this.currentPage &gt;&#x3D; this.pagination.totalPageCount) {
+            // Cannot go to next page because we are already at the last one
+            return;
+        }
+
+        this.currentPage +&#x3D; 1;
+    }
+
+    @api
+    get currentPage() {
+        return this.pCurrentPage;
+    }
+    set currentPage(a) {
+        this.loading &#x3D; true;
+        this.pCurrentPage &#x3D; a;
+        const offset &#x3D; kPaginationConfig.pageSize * (this.pCurrentPage - 1);
+        searchSchoolWithPagination({
+            type: this.schoolType,
+            name: this.paginationCache.name,
+            city: this.paginationCache.city,
+            state: this.paginationCache.state,
+            country: this.paginationCache.country,
+            limitCount: kPaginationConfig.pageSize,
+            offset: offset
+        })
+            .then(results &#x3D;&gt; {
+                this.pagination &#x3D; results;
+                let filteredData &#x3D; this.processData(results.data);
+                this.filteredData &#x3D; filteredData.length &gt; 0 ? filteredData : null;
+                this.loading &#x3D; false;
+            })
+            .catch(error &#x3D;&gt; {
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: &#x27;Something went wrong&#x27;,
+                        message: &#x27;An unexpected error has occurred. Please try again later.&#x27;,
+                        variant: &#x27;error&#x27;,
+                    }),
+                );
+                this.loading &#x3D; false;
+            });
+    }
+
+    /**
+     * Fired when search button is pressed
+     * @event psQuickSearchHS.onsearchcomplete
+     * @type {Boolean}
+     */
+    /**
+     * Searches schools
+     * @fires psQuickSearchHS.onsearchcomplete
+     */
+    handleSearch() {
+        // We have to use the spread operator in order to not assign as a reference
+        this.dispatchEvent(new CustomEvent(&#x27;searchcomplete&#x27;));
+        this.paginationCache &#x3D; { ...this.searchFields };
+        this.currentPage &#x3D; 1;
+    }
+
+    /**
+     * Receives an on key press event for every text field on the search,
+     * and if that key is the Enter/Return key, then search
+     * @param {HTMLEvent} event Contains the key that the user pressed
+     */
+    onEnterThenSearch(event) {
+        if (event.key &#x3D;&#x3D;&#x3D; &#x27;Enter&#x27;) {
+            this.handleSearch();
+        }
+    }
+
+    /**
+     * An array of state options
+     * @type {Array&amp;lt;Object&gt;}
+     * @todo Fetch these values from Salesforce instead of having an array
+     */
+    get stateOptions() {
+        return [
+            { label: &#x27;AK&#x27;, value: &#x27;AK&#x27; },
+            { label: &#x27;AL&#x27;, value: &#x27;AL&#x27; },
+            { label: &#x27;AR&#x27;, value: &#x27;AR&#x27; },
+            { label: &#x27;AZ&#x27;, value: &#x27;AZ&#x27; },
+            { label: &#x27;CA&#x27;, value: &#x27;CA&#x27; },
+            { label: &#x27;CO&#x27;, value: &#x27;CO&#x27; },
+            { label: &#x27;CT&#x27;, value: &#x27;CT&#x27; },
+            { label: &#x27;DE&#x27;, value: &#x27;DE&#x27; },
+            { label: &#x27;FL&#x27;, value: &#x27;FL&#x27; },
+            { label: &#x27;GA&#x27;, value: &#x27;GA&#x27; },
+            { label: &#x27;HI&#x27;, value: &#x27;HI&#x27; },
+            { label: &#x27;IA&#x27;, value: &#x27;IA&#x27; },
+            { label: &#x27;ID&#x27;, value: &#x27;ID&#x27; },
+            { label: &#x27;IL&#x27;, value: &#x27;IL&#x27; },
+            { label: &#x27;IN&#x27;, value: &#x27;IN&#x27; },
+            { label: &#x27;KS&#x27;, value: &#x27;KA&#x27; },
+            { label: &#x27;KY&#x27;, value: &#x27;KY&#x27; },
+            { label: &#x27;LA&#x27;, value: &#x27;LA&#x27; },
+            { label: &#x27;MA&#x27;, value: &#x27;MA&#x27; },
+            { label: &#x27;MD&#x27;, value: &#x27;MD&#x27; },
+            { label: &#x27;ME&#x27;, value: &#x27;ME&#x27; },
+            { label: &#x27;MI&#x27;, value: &#x27;MI&#x27; },
+            { label: &#x27;MN&#x27;, value: &#x27;MN&#x27; },
+            { label: &#x27;MO&#x27;, value: &#x27;MO&#x27; },
+            { label: &#x27;MS&#x27;, value: &#x27;MS&#x27; },
+            { label: &#x27;MT&#x27;, value: &#x27;MT&#x27; },
+            { label: &#x27;NC&#x27;, value: &#x27;NC&#x27; },
+            { label: &#x27;ND&#x27;, value: &#x27;ND&#x27; },
+            { label: &#x27;NE&#x27;, value: &#x27;NE&#x27; },
+            { label: &#x27;NH&#x27;, value: &#x27;NH&#x27; },
+            { label: &#x27;NJ&#x27;, value: &#x27;NJ&#x27; },
+            { label: &#x27;NM&#x27;, value: &#x27;NM&#x27; },
+            { label: &#x27;NV&#x27;, value: &#x27;NV&#x27; },
+            { label: &#x27;NY&#x27;, value: &#x27;NY&#x27; },
+            { label: &#x27;OH&#x27;, value: &#x27;OH&#x27; },
+            { label: &#x27;OK&#x27;, value: &#x27;OK&#x27; },
+            { label: &#x27;OR&#x27;, value: &#x27;OR&#x27; },
+            { label: &#x27;PA&#x27;, value: &#x27;PA&#x27; },
+            { label: &#x27;RI&#x27;, value: &#x27;RI&#x27; },
+            { label: &#x27;SC&#x27;, value: &#x27;SC&#x27; },
+            { label: &#x27;SD&#x27;, value: &#x27;SD&#x27; },
+            { label: &#x27;TN&#x27;, value: &#x27;TN&#x27; },
+            { label: &#x27;TX&#x27;, value: &#x27;TX&#x27; },
+            { label: &#x27;UT&#x27;, value: &#x27;UT&#x27; },
+            { label: &#x27;VA&#x27;, value: &#x27;VA&#x27; },
+            { label: &#x27;VT&#x27;, value: &#x27;VT&#x27; },
+            { label: &#x27;WA&#x27;, value: &#x27;WA&#x27; },
+            { label: &#x27;WI&#x27;, value: &#x27;WI&#x27; },
+            { label: &#x27;WV&#x27;, value: &#x27;WV&#x27; },
+            { label: &#x27;WY&#x27;, value: &#x27;WY&#x27; },
+        ];
+    }
+}
+
+export default psQuickSearchHS;</code></pre>
+          </article>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

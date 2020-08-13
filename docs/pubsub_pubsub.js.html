@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Source: pubsub/pubsub.js</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-banner" role="banner">
+        </div>
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <h1>Source: pubsub/pubsub.js</h1>
+          </header>
+          <article>
+            <pre class="prettyprint linenums"><code>/*
+Class retrieved from Salesforce repo LWC Recipes, available at the following link
+https://github.com/trailheadapps/lwc-recipes/tree/master/force-app/main/default/lwc/pubsub
+*/
+/**
+ * A basic pub-sub mechanism for sibling component communication
+ *
+ * TODO - adopt standard flexipage sibling communication mechanism when it&#x27;s available.
+ */
+
+const events &#x3D; {};
+
+const samePageRef &#x3D; (pageRef1, pageRef2) &#x3D;&gt; {
+    const obj1 &#x3D; pageRef1.attributes;
+    const obj2 &#x3D; pageRef2.attributes;
+    return Object.keys(obj1)
+        .concat(Object.keys(obj2))
+        .every(key &#x3D;&gt; {
+            return obj1[key] &#x3D;&#x3D;&#x3D; obj2[key];
+        });
+};
+
+/**
+ * Registers a callback for an event
+ * @param {string} eventName - Name of the event to listen for.
+ * @param {function} callback - Function to invoke when said event is fired.
+ * @param {object} thisArg - The value to be passed as the this parameter to the callback function is bound.
+ */
+const registerListener &#x3D; (eventName, callback, thisArg) &#x3D;&gt; {
+    // Checking that the listener has a pageRef property. We rely on that property for filtering purpose in fireEvent()
+    if (!thisArg.pageRef) {
+        throw new Error(
+            &#x27;pubsub listeners need a &quot;@wire(CurrentPageReference) pageRef&quot; property&#x27;
+        );
+    }
+
+    if (!events[eventName]) {
+        events[eventName] &#x3D; [];
+    }
+    const duplicate &#x3D; events[eventName].find(listener &#x3D;&gt; {
+        return listener.callback &#x3D;&#x3D;&#x3D; callback &amp;amp;&amp;amp; listener.thisArg &#x3D;&#x3D;&#x3D; thisArg;
+    });
+    if (!duplicate) {
+        events[eventName].push({ callback, thisArg });
+    }
+};
+
+/**
+ * Unregisters a callback for an event
+ * @param {string} eventName - Name of the event to unregister from.
+ * @param {function} callback - Function to unregister.
+ * @param {object} thisArg - The value to be passed as the this parameter to the callback function is bound.
+ */
+const unregisterListener &#x3D; (eventName, callback, thisArg) &#x3D;&gt; {
+    if (events[eventName]) {
+        events[eventName] &#x3D; events[eventName].filter(
+            listener &#x3D;&gt;
+                listener.callback !&#x3D;&#x3D; callback || listener.thisArg !&#x3D;&#x3D; thisArg
+        );
+    }
+};
+
+/**
+ * Unregisters all event listeners bound to an object.
+ * @param {object} thisArg - All the callbacks bound to this object will be removed.
+ */
+const unregisterAllListeners &#x3D; thisArg &#x3D;&gt; {
+    Object.keys(events).forEach(eventName &#x3D;&gt; {
+        events[eventName] &#x3D; events[eventName].filter(
+            listener &#x3D;&gt; listener.thisArg !&#x3D;&#x3D; thisArg
+        );
+    });
+};
+
+/**
+ * Fires an event to listeners.
+ * @param {object} pageRef - Reference of the page that represents the event scope.
+ * @param {string} eventName - Name of the event to fire.
+ * @param {*} payload - Payload of the event to fire.
+ */
+const fireEvent &#x3D; (pageRef, eventName, payload) &#x3D;&gt; {
+    if (events[eventName]) {
+        const listeners &#x3D; events[eventName];
+        listeners.forEach(listener &#x3D;&gt; {
+            if (samePageRef(pageRef, listener.thisArg.pageRef)) {
+                try {
+                    listener.callback.call(listener.thisArg, payload);
+                } catch (error) {
+                    // fail silently
+                }
+            }
+        });
+    }
+};
+
+export {
+    registerListener,
+    unregisterListener,
+    unregisterAllListeners,
+    fireEvent
+};</code></pre>
+          </article>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

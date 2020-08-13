@@ -1,0 +1,705 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Source: psAcademicHistory/psAcademicHistory.js</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-banner" role="banner">
+        </div>
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <h1>Source: psAcademicHistory/psAcademicHistory.js</h1>
+          </header>
+          <article>
+            <pre class="prettyprint linenums"><code>/*
+    Container for academic history tab on Application Community
+    Created by Nathan Young
+    Modified by John Panos to refactor searching validation
+    Last Updated: 08/04/2020
+*/
+import { LightningElement, track, api, wire } from &#x27;lwc&#x27;;
+import { refreshApex } from &#x27;@salesforce/apex&#x27;;
+import { ShowToastEvent } from &quot;lightning/platformShowToastEvent&quot;;
+import saveHS from &#x27;@salesforce/apex/psAcademicHistoryController.saveHS&#x27;;
+import ACADEMIC_HISTORY_COMPLETE_FIELD from &#x27;@salesforce/schema/Application__c.Academic_History_Section__c&#x27;;
+import DISCIPLINARY_COMPLETE_FIELD from &#x27;@salesforce/schema/Application__c.Disciplinary_History_Section__c&#x27;;
+import APP_FIELD from &#x27;@salesforce/schema/Application__c.Id&#x27;;
+import { getRecord, updateRecord } from &#x27;lightning/uiRecordApi&#x27;;
+
+import { CurrentPageReference } from &#x27;lightning/navigation&#x27;;
+import { registerListener, unregisterAllListeners, fireEvent } from &#x27;c/pubsub&#x27;;
+import {
+    RefreshEducation,
+    EducationCount,
+    ClearQuickSearchHS
+} from &#x27;c/messageChannels&#x27;;
+
+/**
+ * Enum for school types
+ * @global
+ * @readonly
+ * @enum {String}
+ */
+const kSchoolType &#x3D; {
+    /** Represents High School */
+    HIGHSCHOOL: &quot;High School&quot;,
+    /** Represents College */
+    COLLEGE: &quot;College&quot;,
+    /** Represents Home School */
+    HOMESCHOOL: &quot;Home School&quot;
+};
+
+/**
+ * Enum for college grading systems
+ * @readonly
+ * @enum {String}
+ */
+const kGradingSystem &#x3D; {
+    /** Represents Quarter */
+    QUARTER: &quot;Quarter&quot;,
+    /** Represents Semester */
+    SEMESTER: &quot;Semester&quot;
+};
+
+/**
+ * @author John Panos
+ * @description LWC that allows the student to enter their academic history
+ */
+class psAcademicHistory extends LightningElement {
+    /**
+     * The current page reference for pubsub
+     * @type {CurrentPageReference}
+     */
+    @wire(CurrentPageReference)
+    pageRef;
+
+    /**
+     * Salesforce internal method that gets called when component is loaded
+     */
+    connectedCallback() {
+        // Start listening for education count
+        registerListener(
+            EducationCount,
+            this.onEducationCount,
+            this
+        );
+    }
+
+    /**
+     * Salesorce internal method that gets called when component is unloaded
+     */
+    disconnectedCallback() {
+        unregisterAllListeners(this);
+    }
+
+    /**
+     * Application record ID passed in from the parent
+     * @type {RecordID}
+     */
+    @api recordId;
+    /**
+     * Contact record ID passed in from the parent
+     * @type {RecordID}
+     */
+    @api contact;
+
+    /**
+     * Email address from contact
+     * @type {String}
+     */
+    @wire(getRecord, {
+        recordId: &quot;$contact&quot;,
+        fields: [&#x27;Contact.Email&#x27;],
+    })
+    contactObject;
+
+    /**
+     * Once the search is complete, if no schools are found this is set to true
+     * @type {Boolean}
+     */
+    @track isSchoolNotFound &#x3D; false; // True if the user does not find their school when searching for it
+
+    /**
+     * Selected school type
+     * @type {kSchoolType}
+     */
+    @track schoolType &#x3D; kSchoolType.HIGHSCHOOL;
+    /**
+     * True if they are entering a home school education record
+     * @type {Boolean}
+     */
+    @track isHomeSchooled; // True if the user is entering a homeschool education record
+
+    /**
+     * Record ID of the education account selected from search
+     * @type {RecordID}
+     */
+    @track selectedSchoolFromSearch &#x3D; null;
+
+    /**
+     * The information that&#x27;s stored if they can&#x27;t find their school in the search
+     * @property {String} name Name of the school
+     * @property {String} city City of the school
+     * @property {String} state State of the school
+     * @property {String} country Country of the school
+     */
+    @track manuallyEnteredSchool &#x3D; {
+        name: null,
+        city: null,
+        state: null,
+        country: null
+    };
+    
+    /**
+     * Conditionally renders manually enter button if true
+     * @type {Boolean}
+     */
+    @track showEnterManuallyButton &#x3D; false;
+
+    /**
+     * Conditionally renders manual form entry if true
+     * @type {Boolean}
+     */
+    @track showEnterManuallyForm &#x3D; false;
+
+    /** 
+     * Conditionally renders education form entry if true
+     * @type {Boolean}
+     */
+    @track showEnterEducationForm &#x3D; false;
+
+    /**
+     * The dates that the student started and finished school
+     * @type {Object}
+     * @property {Date} from The start date
+     * @property {Date} to The finish date
+     */
+    @track schoolDateRange &#x3D; {
+        from: null,
+        to: null
+    };
+
+    /**
+     * The student counselor information
+     * @type {Object}
+     * @property {String} firstName First name
+     * @property {String} lastName Last name
+     * @property {String} email Email
+     * @property {String} phone Phone number
+     */
+    @track counselor &#x3D; {
+        firstName: null,
+        lastName: null,
+        email: null,
+        phone: null
+    };
+
+    /**
+     * The student college information
+     * @property {kGradingSystem} gradingSystem The grading system of the college
+     * @property {Number} totalUnits The units that the student took at the college
+     */
+    @track collegeInfo &#x3D; {
+        gradingSystem: kGradingSystem.SEMESTER,
+        totalUnits: 0
+    };
+
+    /**
+     * If true, it displays a loader on just the education form
+     * @type {Boolean}
+     */
+    @track isSubmitting &#x3D; false;
+
+    /**
+     * If true, it displays a loader on the whole page
+     * @type {Boolean}
+     */
+    @track isSavingSection &#x3D; false; // If true, psDisciplinaryHistory text input, checkbox, and button will be disabled
+
+    /**
+     * Set to true if we should validate data on submit
+     * @type {Boolean}
+     */
+    @track sectionCompleteCheck &#x3D; false;
+
+    apexComplete;
+
+    @wire(getRecord, { recordId: &#x27;$recordId&#x27;, fields: [ACADEMIC_HISTORY_COMPLETE_FIELD, DISCIPLINARY_COMPLETE_FIELD] })
+    app(res) {
+        this.apexComplete &#x3D; res;
+        if (res.data) {
+            this.sectionCompleteCheck &#x3D; res.data.fields.Academic_History_Section__c.value &amp;amp;&amp;amp; res.data.fields.Disciplinary_History_Section__c.value;
+        }
+    }
+
+    /**
+     * Validation booleans 
+     * @property {Boolean} hasAtLeastOneSchool Is set to true if the student has at least one school
+     * @property {Boolean} requiresExplanation Is set to true if the student has set Disciplinary History to Yes
+     * @property {Boolean} isExplanationLongEnough Is set to true if the student has set Disciplinary History to Yes and has typed an explanation
+     */
+    @track validation &#x3D; {
+        hasAtLeastOneSchool: false,
+        requiresExplanation: false,
+        isExplanationLongEnough: false
+    };
+
+    /**
+     * Resets {@link psAcademicHistory#manuallyEnteredSchool} and {@link psAcademicHistory#showEnterManuallyButton} to default values
+     */
+    resetManuallyEnteredInfo() {
+        this.manuallyEnteredSchool &#x3D; {
+            name: null,
+            city: null,
+            state: null,
+            country: null
+        };
+        this.showEnterManuallyButton &#x3D; false;
+    }
+
+    /**
+     * Resets {@link psAcademicHistory#counselor} to default values
+     */
+    resetCounselorInfo() {
+        this.counselor &#x3D; {
+            firstName: null,
+            lastName: null,
+            email: null,
+            phone: null
+        };
+    }
+
+    /**
+     * Resets {@link psAcademicHistory#schoolDateRange} to default values
+     */
+    resetDateRanges() {
+        this.schoolDateRange &#x3D; {
+            to: null,
+            from: null
+        };
+    }
+
+    /**
+     * Resets {@link psAcademicHistory#collegeInfo} to default values
+     */
+    resetCollegeInfo() {
+        this.collegeInfo &#x3D; {
+            gradingSystem: kGradingSystem.QUARTER,
+            totalUnits: 0
+        };
+    }
+
+    /**
+     * Resets by calling all other reset methods
+     */
+    resetAll() {
+        this.selectedSchoolFromSearch &#x3D; null;
+        this.resetManuallyEnteredInfo();
+        this.resetCounselorInfo();
+        this.resetDateRanges();
+        this.resetCollegeInfo();
+    }
+
+    /**
+     * Hides the search and education entry forms
+     * @fires psQuickSearchHS.ClearQuickSearchHS
+     */
+    hideAll() {
+        this.showEnterEducationForm &#x3D; false;
+        this.showEnterManuallyButton &#x3D; false;
+        this.showEnterManuallyForm &#x3D; false;
+        fireEvent(this.pageRef, ClearQuickSearchHS);
+    }
+
+    /**
+     * Gets called when search is complete
+     * @listens psQuickSearchHS.onsearchcomplete
+     * @param {*} event 
+     */
+    onSearch(event) {
+        this.showEnterManuallyButton &#x3D; true;
+    }
+
+    /* HOME SCHOOL EVENTS */
+    onIsHomeSchooledChange(event) {
+        // Sets account to homeschool and resets any manually entered fields
+        this.isHomeSchooled &#x3D; event.target.checked;
+        if (this.isHomeSchooled) {
+            this.selectedSchoolFromSearch &#x3D; kSchoolType.HOMESCHOOL;
+        }
+        this.resetAll();
+    }
+
+    /**
+     * Resets all and hides all then sets {@link psAcademicHistory#schoolType} based on switch value
+     * @param {HTMLEvent} event Event that was sent by the school type switch
+     */
+    onSchoolTypeChange(event) {
+        // If switch is true, then set to college, else high school
+        this.schoolType &#x3D; event.target.checked ? kSchoolType.COLLEGE : kSchoolType.HIGHSCHOOL;
+        this.resetAll();
+        this.hideAll();
+    }
+
+    /**
+     * Saves high school record and refreshes education records
+     * @fires psEducationRecords.RefreshEducation
+     * @todo Do all validation in Apex instead of Javascript
+     */
+    onSaveSchoolClick() {
+        const validationFailed &#x3D; (reason) &#x3D;&gt; {
+            this.isSubmitting &#x3D; false;
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: &#x27;Validation error&#x27;,
+                    message: reason,
+                    variant: &#x27;error&#x27;,
+                })
+            );
+        }
+        // Set load and remove previous validation errors
+        this.isSubmitting &#x3D; true;
+
+        // If we are entering manually, and is not home schooled, validate those fields
+        if (this.showEnterManuallyForm &amp;amp;&amp;amp; !this.isHomeSchooled) {
+            for (const [key, value] of Object.entries(this.manuallyEnteredSchool)) {
+                if (value &#x3D;&#x3D; null || value.length &amp;lt; 1) {
+                    return validationFailed(&#x60;Please enter a value for school ${key}&#x60;);
+                }
+            }
+        }
+
+        // Validate per school type
+        switch (this.schoolType) {
+            case kSchoolType.HIGHSCHOOL:
+                // Code is commented as we may want this functionality in the future
+                // const friendlyKeys &#x3D; {
+                //     firstName: &quot;First Name&quot;,
+                //     lastName: &quot;Last Name&quot;,
+                //     email: &quot;Email&quot;,
+                //     phone: &quot;Phone&quot;
+                // }
+                // for (const [key, value] of Object.entries(this.counselor)) {
+                //     if (value &#x3D;&#x3D; null || value.length &amp;lt; 1) {
+                //         return validationFailed(&#x60;Please enter a value for counselor ${friendlyKeys[key]}&#x60;);
+                //     }
+                // }
+                break;
+            case kSchoolType.COLLEGE:
+                // Validate units completed
+                if (this.collegeInfo.totalUnits &amp;lt; 1) {
+                    return validationFailed(&#x60;Please enter your units completed at college&#x60;);
+                }
+                break;
+        }
+
+        // Make sure that student has entered dates
+        if (!this.schoolDateRange.from ||
+            !this.schoolDateRange.to) {
+            return validationFailed(&quot;Please enter dates for the start and end dates&quot;);
+        }
+
+        // Validate date range
+        const fromDate &#x3D; new Date(this.schoolDateRange.from);
+        const toDate &#x3D; new Date(this.schoolDateRange.to);
+
+        if (fromDate &gt; toDate) {
+            return validationFailed(&quot;Date started at selected school must be before date finished at selected school&quot;);
+        }
+
+        saveHS({
+            contactId: this.contact,
+            name: this.manuallyEnteredSchool.name,
+            city: this.manuallyEnteredSchool.city,
+            state: this.manuallyEnteredSchool.state,
+            country: this.manuallyEnteredSchool.country,
+            accountId: this.selectedSchoolFromSearch,
+            attendFrom: this.schoolDateRange.from,
+            attendTo: this.schoolDateRange.to,
+            fname: this.counselor.firstName,
+            lname: this.counselor.lastName,
+            email: this.counselor.email,
+            phone: this.counselor.phone,
+            type: this.schoolType,
+            units: this.collegeInfo.totalUnits,
+            gradingSystem: this.collegeInfo.gradingSystem,
+            userEmail: this.contactEmail
+        })
+            .then(result &#x3D;&gt; {
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: &#x27;Success&#x27;,
+                        message: &#x27;Your school information has been saved.&#x27;,
+                        variant: &#x27;success&#x27;,
+                    }),
+                )
+                this.isSubmitting &#x3D; false;
+
+                // Send refresh education payload to child
+                fireEvent(
+                    this.pageRef,
+                    RefreshEducation,
+                    true
+                );
+
+                // Resets the page after creating new edu record
+                this.resetAll();
+                this.hideAll();
+            })
+            .catch(error &#x3D;&gt; {
+                this.error &#x3D; error;
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: &#x27;Something went wrong&#x27;,
+                        message: &#x27;An error occurred while saving your school information. Please try again later.&#x27;,
+                        variant: &#x27;error&#x27;,
+                    }),
+                );
+                this.isSubmitting &#x3D; false;
+            });
+
+
+    }
+
+    /**
+     * Sets {@link psAcademicHistory#collegeInfo} to values that were sent from the LWC
+     * @param {HTMLEvent} event Event that was sent by college inputs
+     */
+    onCollegeInfoChange(event) {
+        this.collegeInfo[event.target.name] &#x3D; event.target.value;
+    }
+
+    /**
+     * Sets {@link psAcademicHistory#manuallyEnteredSchool} to the value that was sent from the LWC
+     * @param {HTMLEvent} event Event that was sent by the text input
+     */
+    onSchoolChange(event) {
+        this.manuallyEnteredSchool[event.target.name] &#x3D; event.target.value;
+    }
+
+    /**
+     * Sets {@link psAcademicHistory#schoolDateRange} to the value that was sent from the LWC
+     * @param {HTMLEvent} event Event that was sent by the date input
+     */
+    onDateChange(event) {
+        this.schoolDateRange[event.target.name] &#x3D; event.target.value;
+    }
+
+    /**
+     * Sets {@link psAcademicHistory#counselor} to the value that was sent from the LWC
+     * @param {HTMLEvent} event Event that was sent by the date input
+     */
+    onCounselorChange(event) {
+        this.counselor[event.target.name] &#x3D; event.target.value;
+    }
+
+    /**
+     * Shows the enter manually form
+     */
+    onStartEnterManuallyForm() {
+        this.showEnterManuallyForm &#x3D; true;
+        this.onStartEnterEducationForm();
+    }
+
+    /**
+     * Hides the enter manually form
+     */
+    onCancelEnterManuallyForm() {
+        this.showEnterManuallyForm &#x3D; false;
+    }
+
+    /**
+     * Show education form
+     */
+    onStartEnterEducationForm() {
+        this.showEnterEducationForm &#x3D; true;
+        this.resetAll();
+    }
+
+    /**
+     * Hide the education form
+     */
+    onCancelEnterEducationForm() {
+        this.showEnterEducationForm &#x3D; false;
+        // Make sure to hide manual form when cancel as well
+        if (this.showEnterManuallyForm) {
+            this.onCancelEnterManuallyForm();
+        }
+        this.resetAll();
+    }
+
+    /**
+     * 
+     * @param {*} event 
+     * @listens psDisciplinaryHistory.onrequiresexplanation
+     */
+    onRequiresExplanation(event) {
+        this.validation.requiresExplanation &#x3D; event.detail;
+    }
+
+    onExplanationValidation(event) {
+        this.validation.isExplanationLongEnough &#x3D; event.detail;
+    }
+
+    onSectionCompleteCheck(event) {
+        this.sectionCompleteCheck &#x3D; event.detail;
+    }
+
+    /* HELPER GETTERS FOR LWC */
+    get gradingOptions() {
+        return [
+            { label: kGradingSystem.SEMESTER, value: kGradingSystem.SEMESTER },
+            { label: kGradingSystem.QUARTER, value: kGradingSystem.QUARTER }
+        ];
+    }
+
+    get contactEmail() {
+        return this.contactObject.data.fields.Email.value;
+    }
+
+    /**
+     * LWC getter to see if school type is College
+     * @returns {Boolean} True if {@link psAcademicHistory.schoolType} is College
+     */
+    get isCollege() {
+        return this.schoolType &#x3D;&#x3D;&#x3D; kSchoolType.COLLEGE;
+    }
+
+    /**
+     * LWC getter to see if school type is High School
+     * @returns {Boolean} True if {@link psAcademicHistory.schoolType} is High School
+     */
+    get isHighSchool() {
+        return this.schoolType &#x3D;&#x3D;&#x3D; kSchoolType.HIGHSCHOOL;
+    }
+
+    /**
+     * Updates {@link psAcademicHistory#validation}.hasAtLeastOneSchool if education count is greater than zero
+     * @param {*} event
+     * @listens psEducationRecords.EducationCount
+     */
+    onEducationCount(event) {
+        this.validation.hasAtLeastOneSchool &#x3D; event.count &gt; 0;
+    }
+
+    /**
+     * Gets called when new search row is selected
+     * @param {*} event 
+     */
+    handleRowSelected(event) {
+        // Stores school info when a user clicks a row in the search
+        this.resetAll();
+        if (event.detail) {
+            this.selectedSchoolFromSearch &#x3D; event.detail;
+            this.showEnterEducationForm &#x3D; true;
+        } else {
+            this.showEnterEducationForm &#x3D; false;
+        }
+    }
+
+    /**
+     * Gets called when save section button is pressed
+     */
+    onSaveSection() {
+        const success &#x3D; () &#x3D;&gt; {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: &#x27;Section saved&#x27;,
+                    message: &quot;Academic History was successfully saved&quot;,
+                    variant: &#x27;success&#x27;
+                })
+            );
+        }
+
+        const setItemComplete &#x3D; (complete) &#x3D;&gt; {
+            const fields &#x3D; {};
+
+            fields[APP_FIELD.fieldApiName] &#x3D; this.recordId;
+            fields[ACADEMIC_HISTORY_COMPLETE_FIELD.fieldApiName] &#x3D; complete;
+            fields[DISCIPLINARY_COMPLETE_FIELD.fieldApiName] &#x3D; complete;
+
+            const recordInput &#x3D; { fields };
+            updateRecord(recordInput).then(() &#x3D;&gt; {
+                this.dispatchEvent(
+                    new CustomEvent(&#x27;itemcomplete&#x27;, { detail: { value: complete, child: &quot;Academic History&quot; }, bubbles: true, composed: true })
+                );
+                refreshApex(this.apexComplete).then(() &#x3D;&gt; { this.isSavingSection &#x3D; false });
+            });
+        }
+
+        this.isSavingSection &#x3D; true;
+
+        if (!this.sectionCompleteCheck) {
+            setItemComplete(false);
+            success();
+            return;
+        }
+
+        const validationFailed &#x3D; (reason) &#x3D;&gt; {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: &#x27;Section not complete&#x27;,
+                    message: reason,
+                    variant: &#x27;error&#x27;
+                })
+            );
+
+            setItemComplete(false);
+        };
+
+        // Academic history
+        if (!this.validation.hasAtLeastOneSchool) {
+            return validationFailed(&#x27;You must have at least one school entered to complete this section&#x27;);
+        }
+
+        // Disciplinary history
+        if (this.validation.requiresExplanation &amp;amp;&amp;amp; !this.validation.isExplanationLongEnough) {
+            return validationFailed(&#x27;Discipinary History Explanation must have at least 30 characters before you submit&#x27;);
+        }
+
+        setItemComplete(true);
+        success();
+    }
+}
+
+export default psAcademicHistory;</code></pre>
+          </article>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

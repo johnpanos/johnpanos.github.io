@@ -1,0 +1,540 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Source: portfolioMainTable/portfolioMainTable.js</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-banner" role="banner">
+        </div>
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <h1>Source: portfolioMainTable/portfolioMainTable.js</h1>
+          </header>
+          <article>
+            <pre class="prettyprint linenums"><code>import { LightningElement, track, api, wire } from &#x27;lwc&#x27;;
+import Id from &#x27;@salesforce/user/Id&#x27;;
+import FORM_FACTOR from &#x27;@salesforce/client/formFactor&#x27;;
+import getData from &#x27;@salesforce/apex/AdmPortTableData.getData&#x27;;
+import { registerListener } from &#x27;c/pubsub&#x27;
+import { CurrentPageReference } from &#x27;lightning/navigation&#x27;;
+import { refreshApex } from &#x27;@salesforce/apex&#x27;;
+
+export default class PortfolioMainTable extends LightningElement {
+    @track columns; //holds the column labels
+    filteredData; //holds all data needed for the table body
+    @api viewmode;
+    @track queriedObjs &#x3D; []
+    @track rowsPerPage &#x3D; 10
+    start &#x3D; 0
+
+    @wire(CurrentPageReference)
+    pageRef;
+
+    wiredData
+    @wire(getData, { viewMode: &#x27;$viewmode&#x27;, userId: Id })
+    getRecordData(result) {
+        this.wiredData &#x3D; result
+        if (result.data) {
+            let filteredData &#x3D; this.processData(result.data, this.viewmode);
+            this.filteredData &#x3D; filteredData.length &gt; 0 ? filteredData : [];
+            //reset the start index
+            this.start &#x3D; 0
+
+            let prev &#x3D; this.template.querySelector(&#x27;[class*&#x3D;&quot;selected&quot;]&#x27;)
+            if (prev) {
+                prev.classList.remove(&#x27;selected&#x27;)
+            }
+        }
+        else {
+            this.filteredData &#x3D; []
+        }
+    }
+
+    connectedCallback() {
+        registerListener(
+            &#x27;reloadActivity&#x27;, this.reload, this
+        )
+    }
+
+    reload() {
+        refreshApex(this.wiredData)
+    }
+
+    handleKeyUp(event) {
+        const query &#x3D; event.target.value.toLowerCase();
+        clearTimeout(this.timeout);
+
+        // Timeout for 300 ms to prevent unnecessary queries when the user is still typing 
+        this.timeout &#x3D; setTimeout(() &#x3D;&gt; {
+            if (query.length &gt; 2) {
+                this.queriedObjs &#x3D; []
+                this.filteredData.forEach(el &#x3D;&gt; {
+                    if (el.fields[2].Name.toLowerCase().includes(query)) {
+                        this.queriedObjs.push({ Name: el.fields[2].Name, Id: el.fields[2].Id })
+                    }
+                })
+            }
+        }, 300);
+    }
+
+    handleClick(event) {
+        const conId &#x3D; event.currentTarget.id.slice(0, 18);
+
+        var index &#x3D; this.filteredData.findIndex(el &#x3D;&gt; el.conId &#x3D;&#x3D; conId)
+        if (index !&#x3D; -1) {
+            if (this.start &gt; index || this.start + this.rowsPerPage &amp;lt;&#x3D; index) {
+                this.start &#x3D; this.start +
+                    (this.rowsPerPage * Math.floor((index - this.start) / this.rowsPerPage))
+            }
+            this.timeout &#x3D; setTimeout(() &#x3D;&gt; {
+                let result &#x3D; this.filteredData[index]
+                const rowSelected &#x3D; new CustomEvent(&#x27;rowSelected&#x27;, {
+                    detail: [result.conId, result.appId], bubbles: true, composed: true
+                });
+                this.dispatchEvent(rowSelected);
+
+                let prev &#x3D; this.template.querySelector(&#x27;[class*&#x3D;&quot;selected&quot;]&#x27;)
+                if (prev) {
+                    prev.classList.remove(&#x27;selected&#x27;)
+                }
+                let selected &#x3D; this.template.querySelector(&#x27;[data-id&#x3D;&quot;&#x27; + result.conId + &#x27;&quot;]&#x27;)
+                if (selected) {
+                    selected.classList.add(&#x27;selected&#x27;)
+                }
+            }, 200);
+        }
+
+        this.queriedObjs &#x3D; []
+    }
+
+    /**Creates a data structure for the table to display
+     * 
+     *filteredData&#x27;s structure on return:
+     * 		filteredData:(
+     * 			{conId&#x3D;&#x27;0010m00000NsY1ZAAV&#x27;,
+     *          appId&#x3D;&#x27;0010m00000NsGOIAAA&#x27;,
+     *			fields&#x3D;({label&#x3D;&#x27;Oprah Winfrey&#x27;, value&#x3D;&#x27;0010m00000NsY1ZAAV&#x27;, type&#x3D;&#x27;recname&#x27;},
+     *					{label&#x3D;&#x27;California&#x27;, value&#x3D;&#x27;California&#x27;, type&#x3D;&#x27;text&#x27;},
+     *					{label&#x3D;&#x27;100&#x27;, value&#x3D;&#x27;100&#x27;, type&#x3D;&#x27;number&#x27;})},
+     *			{conId&#x3D;&#x27;0010m00000NsY1ZABC&#x27;,
+     *          appId&#x3D;&#x27;0010m00000NsGOIABS&#x27;,
+     *			fields&#x3D;({label&#x3D;&#x27;John Smith&#x27;, value&#x3D;&#x27;0010m00000NsY1ZABC&#x27;, type&#x3D;&#x27;recname&#x27;},
+     *					{label&#x3D;&#x27;Utah&#x27;, value&#x3D;&#x27;Utah&#x27;, type&#x3D;&#x27;text&#x27;},
+     *					{label&#x3D;&#x27;200&#x27;, value&#x3D;&#x27;200&#x27;, type&#x3D;&#x27;number&#x27;})}
+     *		)
+     */
+    processData(rawData, viewMode) {
+        var tableData &#x3D; [];
+        var record;
+        var recName;
+        try {
+            if (rawData) {
+                switch (viewMode) {
+                    case &#x27;top&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Admission Status&#x27;, fieldName: &#x27;admissionStatus&#x27;, type: &#x27;string&#x27;, sortable: &#x27;true&#x27; }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: record.Active_Application__r.Admission_Status__c, value: record.Active_Application__r.Admission_Status__c, type: &#x27;string&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;ready&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Status Age&#x27;, fieldName: &#x27;statusAge&#x27;, type: &#x27;number&#x27;, sortable: &#x27;true&#x27; }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let statusAge &#x3D; null;
+                            if (record.Active_Application__c) {
+                                statusAge &#x3D; record.Active_Application__r.Current_Status_Age__c;
+                            }
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: statusAge, value: statusAge, type: &#x27;number&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;last&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Last Visit&#x27;, fieldName: &#x27;visit&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Latest_Visit__c), value: record.Latest_Visit__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;activity&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Last Activity&#x27;, fieldName: &#x27;activityDate&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.adm_Latest_Activity_Date__c), value: record.adm_Latest_Activity_Date__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;applied-recent&#x27;:
+                    case &#x27;applied-recent-wo&#x27;:
+                    case &#x27;applied&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Applied On&#x27;, fieldName: &#x27;appliedOn&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Active_Application__r.Date_Applied__c), value: record.Active_Application__r.Date_Applied__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;admitted-recent&#x27;:
+                    case &#x27;admitted-recent-wo&#x27;:
+                    case &#x27;admitted&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Admitted On&#x27;, fieldName: &#x27;admittedOn&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Active_Application__r.Date_Admit__c), value: record.Active_Application__r.Date_Admit__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;confirmed-recent&#x27;:
+                    case &#x27;confirmed-recent-wo&#x27;:
+                    case &#x27;confirmed&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;confirmed On&#x27;, fieldName: &#x27;confirmedOn&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Active_Application__r.Date_Confirmed__c), value: record.Active_Application__r.Date_Confirmed__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;visit-recent&#x27;:
+                    case &#x27;visit-recent-wo&#x27;:
+                    case &#x27;visit&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Last Visit&#x27;, fieldName: &#x27;visit&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Latest_Visit__c), value: record.Latest_Visit__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;visit-upcoming&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Visit Date&#x27;, fieldName: &#x27;visitDate&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Campus_Visits__r[0].Arrival_Date__c), value: record.Campus_Visits__r[0].Arrival_Date__c, link: &#x27;/&#x27; + record.Campus_Visits__r[0].Id, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    //------------------Below this needs to be updated--------------------------/
+                    case &#x27;likely_apply&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;UPDATEME&#x27;, fieldName: &#x27;UPDATEME&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Latest_Visit__c), value: record.Latest_Visit__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;likely_confirm&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;UPDATEME&#x27;, fieldName: &#x27;UPDATEME&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            //TODO: Update this field reference
+                            fields.push({ label: this.formatDate(record.Latest_Visit__c), value: record.Latest_Visit__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    case &#x27;likely_cancel&#x27;:
+                        this.columns &#x3D; [{ label: &#x27;Student&#x27;, fieldName: &#x27;conIdLink&#x27;, type: &#x27;url&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { label: { fieldName: &#x27;conName&#x27; } } },
+                        { label: &#x27;Last Visit&#x27;, fieldName: &#x27;visit&#x27;, type: &#x27;date-local&#x27;, sortable: &#x27;true&#x27;, typeAttributes: { day: &quot;2-digit&quot;, month: &quot;2-digit&quot;, year: &quot;2-digit&quot; } }];
+
+                        for (let i &#x3D; 0; i &amp;lt; rawData.length; i++) {
+                            record &#x3D; rawData[i];
+
+                            recName &#x3D; this.formatName(record.FirstName, record.LastName) || record.Name;
+
+                            let fields &#x3D; [];
+                            fields.push({ label: recName, value: record.Id, type: &#x27;recname&#x27; });
+                            fields.push({ label: this.formatDate(record.Latest_Visit__c), value: record.Latest_Visit__c, type: &#x27;date&#x27; });
+                            fields.push(record)
+
+                            tableData.push({
+                                fields: fields,
+                                conId: record.Id,
+                                appId: record.Active_Application__c
+                            });
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+
+                return tableData;
+            }
+        } catch (e) {
+            alert(&#x27;ERROR processing the data: &#x27; + e)
+        }
+    }
+
+    //Makes names display as &quot;Last, F.&quot;
+    formatName(first, last) {
+        try {
+            if (first !&#x3D; null &amp;amp;&amp;amp; last !&#x3D; null) {
+                return last + &#x27;, &#x27; + first
+            }
+            return null;
+        } catch (e) {
+            alert(&#x27;ERROR shortening names: &#x27; + e)
+        }
+    }
+
+    formatDate(input) {
+        if (!input) { return &#x27;&#x27; }
+        let values &#x3D; input.split(&#x27;-&#x27;)
+        return values.length !&#x3D; 3 ? &#x27;&#x27; : values[1] + &#x27;/&#x27; + values[2] + &#x27;/&#x27; + values[0].substring(2)
+    }
+
+    get showData() {
+        return !this.filteredData ? [] : this.filteredData.slice(this.start, this.start + this.rowsPerPage)
+    }
+
+    get dontShowNext() {
+        return this.filteredData ? this.start + this.rowsPerPage &gt;&#x3D; this.filteredData.length : true
+    }
+
+    goNext() {
+        this.start &#x3D; this.start + this.rowsPerPage
+        const rowSelected &#x3D; new CustomEvent(&#x27;rowSelected&#x27;, {
+            detail: [&quot;&quot;, &quot;&quot;], bubbles: true, composed: true
+        });
+        this.dispatchEvent(rowSelected);
+    }
+
+    get dontShowBack() {
+        return this.start &amp;lt;&#x3D; 0
+    }
+
+    goBack() {
+        this.start &#x3D; this.start - this.rowsPerPage &gt; 0 ? this.start - this.rowsPerPage : 0
+        const rowSelected &#x3D; new CustomEvent(&#x27;rowSelected&#x27;, {
+            detail: [&quot;&quot;, &quot;&quot;], bubbles: true, composed: true
+        });
+        this.dispatchEvent(rowSelected);
+    }
+
+    get pageNumber() {
+        return Math.floor(this.start / this.rowsPerPage) + 1
+    }
+
+    get totalPages() {
+        return this.filteredData ? Math.ceil(this.filteredData.length / this.rowsPerPage) : 0
+    }
+
+    get rowsPerPageOptions() {
+        return [
+            { label: &#x27;10&#x27;, value: 10 },
+            { label: &#x27;25&#x27;, value: 25 },
+            { label: &#x27;50&#x27;, value: 50 },
+            { label: &#x27;All&#x27;, value: 500000 },
+        ];
+    }
+
+    handleRowsChange(event) {
+        this.rowsPerPage &#x3D; parseInt(event.detail.value)
+    }
+
+    get mobile() {
+        return FORM_FACTOR &#x3D;&#x3D; &#x27;Small&#x27;
+    }
+
+    pageBack() {
+        const pageBack &#x3D; new CustomEvent(&#x27;pageback&#x27;, {
+            detail: &#x27;selector&#x27;, bubbles: true, composed: true
+        });
+        this.dispatchEvent(pageBack);
+    }
+}</code></pre>
+          </article>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

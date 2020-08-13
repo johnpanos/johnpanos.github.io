@@ -1,0 +1,384 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Class: psEducationRecords</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <div class="symbol-detail-labels"><span class="label label-kind">class</span></div>
+            <h1><small></small><span class="symbol-name">psEducationRecords</span></h1>
+            <p class="source-link">Source: <a href="psEducationRecords_psEducationRecords.js.html#source-line-66">psEducationRecords/<wbr>psEducationRecords.<wbr>js:66</a></p>
+            <dl class="dl-compact">
+            </dl>
+          </header>
+          <section id="summary">
+            <div class="summary-callout">
+              <h2 class="summary-callout-heading">Properties</h2>
+              <div class="summary-content">
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#educationRecs">educationRecs</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psEducationRecords.html#modal">modal</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#pageRef">pageRef</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psEducationRecords.html#shouldShowRecords">shouldShowRecords</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#userId">userId</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+            <div class="summary-callout">
+              <h2 class="summary-callout-heading">Methods</h2>
+              <div class="summary-content">
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#connectedCallback">connectedCallback()</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psEducationRecords.html#deleteRec">deleteRec(event)</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psEducationRecords.html#disconnectedCallback">disconnectedCallback()</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#editRec">editRec(event)</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psEducationRecords.html#onRefreshEducation">onRefreshEducation()</a></dt>
+                    <dd>
+                    </dd>
+                    <dt><a href="psEducationRecords.html#refresh">refresh()</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#sendCount">sendCount()</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+            <div class="summary-callout">
+              <h2 class="summary-callout-heading">Events</h2>
+              <div class="summary-content">
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#.event:EducationCount">EducationCount</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                  <dl class="dl-summary-callout">
+                    <dt><a href="psEducationRecords.html#.event:RefreshEducation">RefreshEducation</a></dt>
+                    <dd>
+                    </dd>
+                  </dl>
+                </div>
+                <div class="summary-column">
+                </div>
+              </div>
+            </div>
+          </section>
+          <section>
+            <h2 id="psEducationRecords">new&nbsp;<span class="symbol-name">psEducationRecords</span><span class="signature"><span class="signature-params">()</span></span></h2>
+            <p>Displays previous education records on psAcademicHistory</p>
+            <dl class="dl-compact">
+              <dt>Author</dt>
+              <dd>Nathan Young, John Panos</dd>
+            </dl>
+          </section>
+          <section>
+            <h2>Properties</h2>
+            <section>
+              <h3 id="educationRecs"><span class="symbol-name">educationRecs</span><small class="property-type">
+                  &nbsp;Array of EducationRecords</small></h3>
+              <p>Education records to list</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="modal"><span class="symbol-name">modal</span></h3>
+              <p>Information for the education record edit modal</p>
+              <section>
+                <h4>Properties</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>record</p>
+                      </td>
+                      <td>
+                        <p>EducationRecord</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The selected record to edit</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>isLoading</p>
+                      </td>
+                      <td>
+                        <p>Boolean</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>If true then modal should show a spinner</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p>show</p>
+                      </td>
+                      <td>
+                        <p>Boolean</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>If true then the modal should be visible</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="pageRef"><span class="symbol-name">pageRef</span></h3>
+              <p>Page reference in order to subscribe/publish events</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="shouldShowRecords"><span class="symbol-name">shouldShowRecords</span></h3>
+              <p>LWC helper to determine if it should show education records or not</p>
+              <dl class="dl-compact">
+                <dt>Returns</dt>
+                <dd>
+                  <p><code>Boolean</code> Returns true if there are education records to display</p>
+                </dd>
+              </dl>
+              <h3 id="userId"><span class="symbol-name">userId</span></h3>
+              <p>The student's userId from Salesforce</p>
+              <dl class="dl-compact">
+              </dl>
+            </section>
+            <h2>Methods</h2>
+            <section>
+              <h3 id="connectedCallback"><span class="symbol-name">connectedCallback</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>Internal Salesforce life cycle method, used for registering listeners to events</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="deleteRec"><span class="symbol-name">deleteRec</span><span class="signature"><span class="signature-params">(event)</span></span></h3>
+              <p>Deletes an education record</p>
+              <section>
+                <h4>Parameter</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>event</p>
+                      </td>
+                      <td>
+                        <p>any type</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+                <dt>To do</dt>
+                <dd>This method is not being called anywhere, should it?</dd>
+              </dl>
+              <h3 id="disconnectedCallback"><span class="symbol-name">disconnectedCallback</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>Internal Salesforce life cycle method, used for unregistering listeners to events</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="editRec"><span class="symbol-name">editRec</span><span class="signature"><span class="signature-params">(event)</span></span></h3>
+              <p>Is called when an education record is being edited and opens up
+                a modal in order to edit education fields</p>
+              <section>
+                <h4>Parameter</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>event</p>
+                      </td>
+                      <td>
+                        <p>HTMLEvent</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The element that fired the event</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="onRefreshEducation"><span class="symbol-name">onRefreshEducation</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>When event fires, it refreshes <a href="psEducationRecords.html#educationRecs">psEducationRecords#educationRecs</a>.</p>
+              <dl class="dl-compact">
+                <dt>Listens to</dt>
+                <dd><a href="psEducationRecords.html#.event:RefreshEducation">psEducationRecords.event:RefreshEducation</a></dd>
+              </dl>
+              <h3 id="refresh"><span class="symbol-name">refresh</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>Refreshes the education records</p>
+              <dl class="dl-compact">
+              </dl>
+              <h3 id="sendCount"><span class="symbol-name">sendCount</span><span class="signature"><span class="signature-params">()</span></span></h3>
+              <p>When a new record is created update count</p>
+              <dl class="dl-compact">
+                <dt>Fires</dt>
+                <dd><a href="psEducationRecords.html#.event:EducationCount">psEducationRecords.event:EducationCount</a></dd>
+              </dl>
+            </section>
+            <h2>Events</h2>
+            <section>
+              <div class="symbol-detail-labels"><span class="label label-static">static</span></div>
+              <h3 id=".event:EducationCount"><span class="symbol-name">EducationCount</span><small class="property-type">
+                  &nbsp;Object</small></h3>
+              <p>When fired, any component listening will get the count of education records</p>
+              <section>
+                <h4>Property</h4>
+                <table class="jsdoc-details-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Optional</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <p>count</p>
+                      </td>
+                      <td>
+                        <p>Number</p>
+                      </td>
+                      <td>
+                        <p>&nbsp;</p>
+                      </td>
+                      <td>
+                        <p>The count of education records</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+              <dl class="dl-compact">
+                <dt>Listener</dt>
+                <dd><a href="psAcademicHistory.html#onEducationCount">psAcademicHistory#onEducationCount</a></dd>
+              </dl>
+              <div class="symbol-detail-labels"><span class="label label-static">static</span></div>
+              <h3 id=".event:RefreshEducation"><span class="symbol-name">RefreshEducation</span><small class="property-type">
+                  &nbsp;Boolean</small></h3>
+              <p>When fired, any component listening knows to update the education record</p>
+              <dl class="dl-compact">
+                <dt>Listener</dt>
+                <dd><a href="psEducationRecords.html#onRefreshEducation">psEducationRecords#onRefreshEducation</a></dd>
+              </dl>
+            </section>
+          </section>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

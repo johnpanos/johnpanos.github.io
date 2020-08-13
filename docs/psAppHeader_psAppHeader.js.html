@@ -1,0 +1,390 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Source: psAppHeader/psAppHeader.js</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-banner" role="banner">
+        </div>
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <h1>Source: psAppHeader/psAppHeader.js</h1>
+          </header>
+          <article>
+            <pre class="prettyprint linenums"><code>/* 
+ * Created by: Talia Bjelland, Westmont College
+ * Date: 4/12/19
+ * Purpose: Retrieves data on Application term and type, displays relevant messages,
+ *          and allows user to manipulate data or create a new application in the portal
+ */
+
+
+import { LightningElement, track, wire, api } from &#x27;lwc&#x27;;
+import { getRecord } from &#x27;lightning/uiRecordApi&#x27;;
+import USER_ID from &#x27;@salesforce/user/Id&#x27;;
+import CONTACTID_FIELD from &#x27;@salesforce/schema/User.ContactId&#x27;;
+import getApp from &#x27;@salesforce/apex/psAppHeaderController.getApp&#x27;;
+import CONTACTIDFIELD from &#x27;@salesforce/schema/Application__c.Contact__c&#x27;;
+import getTerm from &#x27;@salesforce/apex/psAppHeaderController.getTerm&#x27;;
+import reactivateApp from &#x27;@salesforce/apex/psAppHeaderController.reactivateApp&#x27;;
+import correctDuplicateAdmissionPlan from &#x27;@salesforce/apex/psAppHeaderController.correctDuplicateAdmissionPlan&#x27;
+import { getPicklistValuesByRecordType, getObjectInfo } from &#x27;lightning/uiObjectInfoApi&#x27;;
+import CONTACT from &quot;@salesforce/schema/Contact&quot;;
+
+export default class PsAppHeader extends LightningElement {
+
+    //track these fields to display personalized information
+    @track term;
+    @track type;
+    @track plan;
+    @track firstName;
+
+    //track these fields to manage what is displayed
+    @track display;
+    @track showEntry &#x3D; false;
+    @track showError &#x3D; false;
+    @track showButton &#x3D; true;
+    @track isLoading;
+    @track admissionError &#x3D; false;
+
+    //track these fields to display correct admission plan options
+    @track offerEarlyAction &#x3D; true;
+    @track offerEarlyAction2 &#x3D; true;
+    @track firstYearStudent;
+
+    //track these fields to store wired information
+    @track wiredAccounts;
+    @track wiredContacts;
+    @track wiredTerm;
+    @track contactId;
+    @api recordId;
+    @track wiredEntryTerm;
+
+    //determine which text to display
+    @track submitted &#x3D; false;
+    @track denied &#x3D; false;
+    @track admitted &#x3D; false;
+    @track completed &#x3D; false;
+    @track waitlisted &#x3D; false;
+    @track cancelled &#x3D; false;
+    @track enrolled &#x3D; false;
+    @track contactAdmissions &#x3D; false;
+    @track isCurrentApplication &#x3D; false;
+    @track appNeverFinished &#x3D; false;
+    @track forceNewApp &#x3D; false;
+    @track forceReactivate &#x3D; false;
+    @track reactivateEligible &#x3D; false;
+
+    //determine which form to display
+    @track allowEdit &#x3D; false;
+    @track allowCreate &#x3D; false;
+
+
+    //retrieves contactId from UserId
+    @wire(getRecord, {
+        recordId: USER_ID,
+        fields: [CONTACTID_FIELD]
+    })
+    wirecontact(value) {
+        this.wiredContacts &#x3D; value;
+        const { data, error } &#x3D; value;
+        if (error) {
+            this.error &#x3D; error;
+        } else if (data) {
+            this.contactId &#x3D; data.fields.ContactId.value;
+        }
+    }
+
+    //retrieves Application Id and relevant fields from Application
+    @wire(getApp, {
+        contactId: &#x27;$contactId&#x27;
+    })
+    wireaccount(value) {
+        this.wiredAccounts &#x3D; value;
+        const { data, error } &#x3D; value;
+        if (error) {
+            this.error &#x3D; error;
+        } else if (data) {
+            this.record &#x3D; data[0];
+            if (data[0] &#x3D;&#x3D;&#x3D; undefined) {
+                this.display &#x3D; false;
+            } else {
+                this.display &#x3D; true;
+                this.term &#x3D; this.record.Attending_Term__c;
+                this.termMethod(this.term);
+                this.type &#x3D; this.record.Student_Type__c;
+                this.newStudentType &#x3D; this.record.Student_Type__c
+                this.typeMethod(this.type);
+                this.recordId &#x3D; this.record.Id;
+                this.plan &#x3D; this.record.Admission_Plan__c;
+                this.firstName &#x3D; this.record.Contact__r.FirstName;
+            }
+        }
+    }
+
+    //retrieves appropriate term and relevant fields
+    @wire(getTerm, {
+        termName: &#x27;$term&#x27;
+    })
+    wireterm(value) {
+        this.wiredTerm &#x3D; value;
+        const { data, error } &#x3D; value;
+        if (error) {
+            this.error &#x3D; error;
+            this.display &#x3D; false;
+        } else if (data) {
+            this.display &#x3D; true;
+            if (data[0] &#x3D;&#x3D;&#x3D; undefined) {
+                this.display &#x3D; false;
+            } else if (data[0].Accepting_Applications__c) {
+                this.display &#x3D; true;
+                //if the term is still accepting apps, determine which text to display based on admission status
+                if (this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Deny&#x27;) {
+                    this.denied &#x3D; true;
+                } else if (this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Enrolled&#x27; || this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Confirmed&#x27;) {
+                    this.enrolled &#x3D; true;
+                } else if (this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Cancel&#x27;) {
+                    this.cancelled &#x3D; true;
+                } else if (this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Admit&#x27;) {
+                    this.admitted &#x3D; true;
+                } else if (this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Complete&#x27; || this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Pending&#x27;) {
+                    this.completed &#x3D; true;
+                } else if (this.record.Admission_Status__c &#x3D;&#x3D; &#x27;Waitlist&#x27;) {
+                    this.waitlisted &#x3D; true;
+                } else if (this.record.Submit_Application_Section__c || this.record.Application_Locked__c) {
+                    this.submitted &#x3D; true;
+                } else
+                    this.isCurrentApplication &#x3D; true;
+            } else {
+                this.display &#x3D; true;
+                this.reactivateEligible &#x3D; data[0].Accepting_Reactivation__c;
+                this.checkAdmissionStatus();
+            }
+        }
+    }
+
+    //a custom student type picklist is needed in order to use the picklist values 
+    //from Contact.adm_Student_Type_Inquiry__c instead of Application__c.Student_Type__c
+    newStudentType
+    studentTypeValues
+    @wire(getObjectInfo, { objectApiName: CONTACT })
+    objectInfo;
+
+    @wire(getPicklistValuesByRecordType, { recordTypeId: &#x27;$objectInfo.data.defaultRecordTypeId&#x27;, objectApiName: &#x27;Contact&#x27; })
+    wiredPicklistValues({ error, data }) {
+        if (data) {
+            this.studentTypeValues &#x3D; data.picklistFieldValues.adm_Student_Type_Inquiry__c.values;
+        } else if (error) {
+            console.log(error);
+        }
+    }
+
+    //********************************* Handle Admission Status *****************************************/
+    checkAdmissionStatus() {
+        if (this.record.Admission_Status__c &#x3D;&#x3D;&#x3D; &quot;Inquiry&quot; ||
+            this.record.Admission_Status__c &#x3D;&#x3D;&#x3D; &quot;Credentials&quot; ||
+            this.record.Admission_Status__c &#x3D;&#x3D;&#x3D; &quot;App Started&quot;) {
+            this.appNeverFinished &#x3D; true;
+        }
+        else if (this.record.Admission_Status__c &#x3D;&#x3D;&#x3D; &quot;Cancel&quot; ||
+            this.record.Admission_Status__c &#x3D;&#x3D;&#x3D; &quot;Deny&quot;) {
+            if (this.reactivateEligible) {
+                this.forceReactivate &#x3D; true;
+            } else {
+                this.forceNewApp &#x3D; true;
+            }
+        }
+        else if (this.record.Admission_Status__c &#x3D;&#x3D;&#x3D; &quot;Enrolled&quot;) {
+            this.forceNewApp &#x3D; true;
+        }
+        else {
+            this.contactAdmissions &#x3D; true;
+        }
+    }
+
+    /************* Event handlers ***********/
+    handleClick(event) {
+        this.allowEdit &#x3D; (this.isCurrentApplication || this.appNeverFinished);
+        this.allowCreate &#x3D; (this.forceReactivate || this.forceNewApp);
+        this.showEntry &#x3D; true;
+        this.showButton &#x3D; false;
+    }
+
+    handleCancel(event) {
+        this.showEntry &#x3D; false;
+        this.showButton &#x3D; true;
+        this.showError &#x3D; false;
+        this.admissionError &#x3D; false;
+    }
+
+    //verifies all fields are filled in, submits/edits data
+    handleSubmit(event) {
+        event.preventDefault();
+        const fields &#x3D; event.detail.fields;
+        fields.Student_Type__c &#x3D; this.newStudentType
+        if (this.forceReactivate || this.forceNewApp) {
+            fields[CONTACTIDFIELD.fieldApiName] &#x3D; this.contactId;
+        }
+
+        //enforce filling out all fields
+        if (fields.Attending_Term__c !&#x3D;&#x3D; &quot;&quot; &amp;amp;&amp;amp; fields.Student_Type__c !&#x3D;&#x3D; &quot;&quot;) {
+
+            //enforce select only one admission plan
+            let count &#x3D; 0;
+            if (fields.Early_Action__c) { count++; }
+            if (fields.Early_Action_2__c) { count++; }
+            if (fields.Regular_Decision__c) { count++; }
+            if (count &gt; 1) {
+                this.admissionError &#x3D; true;
+            } else if (count &#x3D;&#x3D;&#x3D; 0) {
+                this.showError &#x3D; true;
+            }
+
+            else {
+                if (this.allowEdit) {
+                    this.template.querySelector(&#x27;[data-id&#x3D;&quot;editForm&quot;]&#x27;).submit(fields);
+                    this.isLoading &#x3D; true;
+                } else if (this.forceReactivate || this.forceNewApp) {
+                    this.isLoading &#x3D; true;
+
+                    //if early action/early action 2 are not included in the form because student isn&#x27;t eligible, set to false
+                    var ea;
+                    var ea2;
+                    var isreactivation;
+                    if (fields.Early_Action__c &#x3D;&#x3D;&#x3D; undefined) {
+                        ea &#x3D; false;
+                    }
+                    else {
+                        ea &#x3D; fields.Early_Action__c;
+                    }
+
+                    if (fields.Early_Action_2__c &#x3D;&#x3D;&#x3D; undefined) {
+                        ea2 &#x3D; false;
+                    }
+                    else {
+                        ea2 &#x3D; fields.Early_Action_2__c;
+                    }
+
+                    reactivateApp({
+                        contactId: this.contactId, earlyAction: ea, earlyAction2: ea2, regularDecision: fields.Regular_Decision__c,
+                        attendingTerm: fields.Attending_Term__c, studentType: fields.Student_Type__c, isReactivate: this.forceReactivate
+                    })
+                        .then(result &#x3D;&gt; {
+                            window.location.reload(true); //reload portal after new app is inserted
+                        })
+                }
+            }
+        } else {
+            this.showError &#x3D; true; //show error if fields are not all complete
+        }
+    }
+
+    handleSuccess(event) {
+        correctDuplicateAdmissionPlan({ contactId: this.contactId }); //ensure only one admission plan checkbox is marked true on the application
+        window.location.reload(true); //reload portal
+    }
+
+    /******** determines whether attending term is eligible for early action/early action 2 based on date********/
+    termMethod(stringterm) {
+        if (stringterm.substring(0, 4).localeCompare(&quot;Fall&quot;) !&#x3D;&#x3D; 0) {
+            this.offerEarlyAction &#x3D; false;
+            this.offerEarlyAction2 &#x3D; false;
+        } else {
+            getTerm({ termName: stringterm })
+                .then(result &#x3D;&gt; {
+                    if ((!(result[0].Accepting_Applications__c)) || (result[0].Early_Action_Deadline__c &#x3D;&#x3D;&#x3D; undefined) || (result[0].Early_Action_2_Deadline__c &#x3D;&#x3D;&#x3D; undefined)) {
+                        this.offerEarlyAction &#x3D; false;
+                        this.offerEarlyAction2 &#x3D; false;
+                    } else {
+                        var currentDate &#x3D; new Date();
+                        var year &#x3D; currentDate.getFullYear();
+                        var month &#x3D; currentDate.getMonth() + 1;
+                        var day &#x3D; currentDate.getDate();
+                        var eaYear &#x3D; Number.parseInt(result[0].Early_Action_Deadline__c.substring(0, 4));
+                        var eaMonth &#x3D; Number.parseInt(result[0].Early_Action_Deadline__c.substring(5, 7));
+                        var eaDay &#x3D; Number.parseInt(result[0].Early_Action_Deadline__c.substring(8));
+                        var ea2Year &#x3D; Number.parseInt(result[0].Early_Action_2_Deadline__c.substring(0, 4));
+                        var ea2Month &#x3D; Number.parseInt(result[0].Early_Action_2_Deadline__c.substring(5, 7));
+                        var ea2Day &#x3D; Number.parseInt(result[0].Early_Action_2_Deadline__c.substring(8));
+
+                        if ((year &amp;lt; eaYear) || ((year &#x3D;&#x3D;&#x3D; eaYear) &amp;amp;&amp;amp; (month &amp;lt; eaMonth)) || ((year &#x3D;&#x3D;&#x3D; eaYear) &amp;amp;&amp;amp; (month &#x3D;&#x3D;&#x3D; eaMonth) &amp;amp;&amp;amp; (day &amp;lt;&#x3D; eaDay))) {
+                            this.offerEarlyAction &#x3D; true;
+                            this.offerEarlyAction2 &#x3D; true;
+                        } else if ((year &amp;lt; ea2Year) || ((year &#x3D;&#x3D;&#x3D; ea2Year) &amp;amp;&amp;amp; (month &amp;lt; ea2Month)) || ((year &#x3D;&#x3D;&#x3D; ea2Year) &amp;amp;&amp;amp; (month &#x3D;&#x3D;&#x3D; ea2Month) &amp;amp;&amp;amp; (day &amp;lt;&#x3D; ea2Day))) {
+                            this.offerEarlyAction &#x3D; false;
+                            this.offerEarlyAction2 &#x3D; true;
+                        } else {
+                            this.offerEarlyAction &#x3D; false;
+                            this.offerEarlyAction2 &#x3D; false;
+                        }
+
+                    }
+                })
+                .catch(error &#x3D;&gt; {
+                    this.error &#x3D; error;
+                })
+        }
+    }
+
+    /** determines if entry form data is changed to first year**/
+    typeMethod(stringtype) {
+        let studentType &#x3D; stringtype;
+        if (studentType &amp;amp;&amp;amp; studentType.localeCompare(&quot;First Year&quot;) &#x3D;&#x3D;&#x3D; 0) {
+            this.firstYearStudent &#x3D; true;
+        } else {
+            this.firstYearStudent &#x3D; false;
+        }
+    }
+
+
+    /* event handlers that update whether early action / e.a.2 should be displayed when user changes term + type in form */
+    updateFromTerm(event) {
+        this.termMethod(event.target.value);
+    }
+
+    updateFromType(event) {
+        this.newStudentType &#x3D; event.detail.value
+        this.typeMethod(event.detail.value);
+    }
+
+}</code></pre>
+          </article>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>

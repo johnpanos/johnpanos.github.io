@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="generator" content="JSDoc 3.6.5">
+  <meta charset="utf-8">
+  <title>Source: psDisciplinaryHistory/psDisciplinaryHistory.js</title>
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Karla:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Noto+Serif:400,400i,700,700i" type="text/css">
+  <link rel="stylesheet" href="https://brick.a.ssl.fastly.net/Inconsolata:500" type="text/css">
+  <link href="css/baseline.css" rel="stylesheet">
+</head>
+
+<body onload="prettyPrint()">
+  <nav id="jsdoc-navbar" role="navigation" class="jsdoc-navbar">
+    <div id="jsdoc-navbar-container">
+      <div id="jsdoc-navbar-content">
+        <a href="index.html" class="jsdoc-navbar-package-name">Home</a>
+      </div>
+    </div>
+  </nav>
+  <div id="jsdoc-body-container">
+    <div id="jsdoc-content">
+      <div id="jsdoc-content-container">
+        <div id="jsdoc-banner" role="banner">
+        </div>
+        <div id="jsdoc-main" role="main">
+          <header class="page-header">
+            <h1>Source: psDisciplinaryHistory/psDisciplinaryHistory.js</h1>
+          </header>
+          <article>
+            <pre class="prettyprint linenums"><code>/**
+ * Created by: Sophia Gigliotti, Westmont College
+ * Created date: 01/12/2020
+ * Last Updated: 8/4/2020 by John Panos to convert to events
+ * Purpose: Extracurricular Component for PS Portal
+ **/
+
+import { LightningElement, track, api, wire } from &#x27;lwc&#x27;;
+import ACADEMIC_HISTORY_COMPLETE_FIELD from &#x27;@salesforce/schema/Application__c.Academic_History_Section__c&#x27;;
+import DISCIPLINARY_ACTION_FIELD from &#x27;@salesforce/schema/Application__c.Disciplinary_Action__c&#x27;;
+import DISCIPLINARY_EXPLANATION_FIELD from &#x27;@salesforce/schema/Application__c.Disciplinary_Explanation__c&#x27;;
+import { getRecord } from &#x27;lightning/uiRecordApi&#x27;;
+
+/**
+ * @author Sophia Gigliotti, John Panos
+ * @description Allows the student to enter in their disciplinary history
+ */
+class psDisciplinaryHistory extends LightningElement {
+    @api recordId;
+    @api sectionComplete;
+    @api isSavingSection;
+
+    /**
+     * Create variables to track responses to disciplinary and felony history and track completion of the section.
+     **/
+    @track loading &#x3D; false;
+    @track disciplinaryValue &#x3D; false;
+    @track previousInfo;
+
+    @track firstTime&#x3D;true;
+    @api historyValidation;
+
+    /**
+     * Fires when disciplinary action is changed
+     * @param {Boolean} detail If true then their disciplinary action is Yes
+     * @event psDisciplinaryHistory.onrequiresexplanation
+     */
+    /**
+     * Fires when disciplinary explanation is changed
+     * @param {Boolean} detail If true then their disciplinary explanation is
+     * at least 30 characters in length
+     * @event psDisciplinaryHistory.onexplanationvalidation
+     */
+    /**
+     * Gets initial data from Salesforce and sends events
+     * @fires psDisciplinaryHistory.onrequiresexplanation
+     * @fires psDisciplinaryHistory.onexplanationvalidation
+     */
+    @wire(getRecord, { recordId:&#x27;$recordId&#x27;, fields: [ACADEMIC_HISTORY_COMPLETE_FIELD, DISCIPLINARY_ACTION_FIELD, DISCIPLINARY_EXPLANATION_FIELD] })
+    wireInitalData({ data }) {
+        if (data) {
+            this.previousInfo &#x3D; data.fields.Disciplinary_Action__c.value;
+            this.dispatchEvent(
+                new CustomEvent(&#x27;requiresexplanation&#x27;, {
+                    detail: this.previousInfo &#x3D;&#x3D; &#x27;Yes&#x27;, bubbles: true, composed: true
+                })
+            );
+            this.dispatchEvent(
+                new CustomEvent(&#x27;explanationvalidation&#x27;, {
+                    detail: data.fields.Disciplinary_Explanation__c.value.length &gt; 30, bubbles: true, composed: true
+                })
+            );
+        }
+    }
+
+    /**
+     * Whenever a text field is changed, send those changes to the parent component
+     * @fires psDisciplinaryHistory.onrequiresexplanation
+     * @fires psDisciplinaryHistory.onexplanationvalidation
+     */
+    handleDisciplinaryChange(event) {
+        switch(event.target.fieldName) {
+            // On Disciplinary Action Change
+            case &quot;Disciplinary_Action__c&quot;:
+                this.previousInfo &#x3D; event.target.value;
+                const checked &#x3D; event.target.value &#x3D;&#x3D; &quot;Yes&quot;;
+                this.displayDisciplinary &#x3D; checked;
+                this.dispatchEvent(
+                    new CustomEvent(&#x27;requiresexplanation&#x27;, {
+                        detail: checked, bubbles: true, composed: true
+                    })
+                );
+                break;
+            // On explanation change 
+            case &quot;Disciplinary_Explanation__c&quot;:
+                this.dispatchEvent(
+                    new CustomEvent(&#x27;explanationvalidation&#x27;, {
+                        detail: event.target.value.length &gt; 10, bubbles: true, composed: true
+                    })
+                );
+                break;
+        }
+    }
+
+    /**
+     * LWC getter for conditional rendering
+     * @returns {Boolean} If it should show the disciplinary explanation text field or not
+     */
+    get showDisciplinaryExplanation() {
+        return this.previousInfo &#x3D;&#x3D;&#x3D; &#x27;Yes&#x27;;
+    }
+
+    /**
+     * Fires when the checkbox is checked
+     * @event psDisciplinaryHistory.onsectioncompletecheck
+     * @param {Boolean} detail If the checkbox is checked or not
+     */
+    /**
+     * @fires psDisciplinaryHistory.onsectioncompletecheck
+     * @param {HTMLEvent} event The event sent from the checkbox
+     */
+    onCheck(event) {
+        this.dispatchEvent(
+            new CustomEvent(&#x27;sectioncompletecheck&#x27;, {
+                detail: event.target.checked, bubbles: true, composed: true
+            })
+        );
+    }
+    
+    /**
+     * Updates Academic History section complete field on application
+     */
+    onSave(event){
+        this.dispatchEvent(
+            new CustomEvent(&#x27;savesection&#x27;, {
+                detail: true, bubbles: true, composed: true
+            })
+        );
+    }
+}
+
+export default psDisciplinaryHistory;</code></pre>
+          </article>
+        </div>
+      </div>
+      <nav id="jsdoc-toc-nav" role="navigation"></nav>
+    </div>
+  </div>
+  <footer id="jsdoc-footer" class="jsdoc-footer">
+    <div id="jsdoc-footer-container">
+      <p>
+        Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc</a> 3.6.5 on August 13, 2020.
+      </p>
+    </div>
+  </footer>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/tree.jquery.js"></script>
+  <script src="scripts/prettify.js"></script>
+  <script src="scripts/jsdoc-toc.js"></script>
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/scrollanchor.js"></script>
+</body>
+
+</html>
